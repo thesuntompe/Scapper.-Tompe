@@ -5,7 +5,7 @@ import MetricCards from "./components/MetricCards";
 import CampaignSettings from "./components/CampaignSettings";
 import LeadsDashboard from "./components/LeadsDashboard";
 import LeadDossierTab from "./components/LeadDossierTab";
-import EmailOutreachTab from "./components/EmailOutreachTab";
+import CommunicationCenterTab from "./components/CommunicationCenterTab";
 import AIWebsiteWorkspaceTab from "./components/AIWebsiteWorkspaceTab";
 
 export default function App() {
@@ -181,7 +181,7 @@ export default function App() {
                     consoleTab === "outreach" ? "bg-slate-900 text-white shadow-sm" : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
-                  Email Outreach
+                  Communication Center
                 </button>
                 <button
                   onClick={() => setConsoleTab("website")}
@@ -203,7 +203,7 @@ export default function App() {
                   <LeadDossierTab lead={selectedLead} onUpdateLead={handleUpdateLead} />
                 )}
                 {consoleTab === "outreach" && (
-                  <EmailOutreachTab lead={selectedLead} onUpdateLead={handleUpdateLead} />
+                  <CommunicationCenterTab lead={selectedLead} onUpdateLead={handleUpdateLead} />
                 )}
                 {consoleTab === "website" && (
                   <AIWebsiteWorkspaceTab lead={selectedLead} onUpdateLead={handleUpdateLead} />

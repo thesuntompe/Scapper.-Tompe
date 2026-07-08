@@ -113,6 +113,34 @@ export interface FollowupAutomation {
   daysSinceLastContact?: number;
 }
 
+export interface WhatsAppMessage {
+  id: string;
+  body: string;
+  status: 'draft' | 'approved' | 'sent' | 'delivered' | 'read' | 'replied' | 'meeting_scheduled';
+  sentAt?: string;
+  deliveredAt?: string;
+  readAt?: string;
+  repliedAt?: string;
+}
+
+export interface InstagramMessage {
+  id: string;
+  body: string;
+  status: 'draft' | 'approved' | 'sent' | 'replied';
+  sentAt?: string;
+  repliedAt?: string;
+}
+
+export interface InstagramProfile {
+  username?: string;
+  isBusinessAccount?: boolean;
+  biography?: string;
+  followersCount?: number;
+  profilePicUrl?: string;
+  verifiedPublicInfo?: boolean;
+  linkedAt?: string;
+}
+
 export interface Lead {
   id: string;
   businessName: string;
@@ -157,6 +185,9 @@ export interface Lead {
   proposal?: Proposal;
   contract?: Contract;
   followupAutomation?: FollowupAutomation;
+  whatsappMessages?: WhatsAppMessage[];
+  instagramProfile?: InstagramProfile;
+  instagramMessages?: InstagramMessage[];
 }
 
 export interface CampaignStats {
