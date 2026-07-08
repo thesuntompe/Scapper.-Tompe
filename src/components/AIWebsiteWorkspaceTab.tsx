@@ -133,8 +133,6 @@ export default function AIWebsiteWorkspaceTab({ lead, onUpdateLead }: AIWebsiteW
   const handleConfigureDomain = async (dnsStatus: "pending" | "configured") => {
     if (dnsStatus === "configured") {
       setVerifyingDns(true);
-      // Beautiful 2s delay simulation of checking Namecheap/GoDaddy propagation
-      await new Promise(resolve => setTimeout(resolve, 2000));
       setVerifyingDns(false);
     }
 

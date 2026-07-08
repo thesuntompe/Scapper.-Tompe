@@ -69,37 +69,25 @@ export default function LeadDossierTab({ lead, onUpdateLead }: LeadDossierTabPro
     });
   };
 
-  const handleGenerateProposal = () => {
+  const handleGenerateProposal = async () => {
     setCreatingProposal(true);
-    setTimeout(() => {
-      syncLeadChange({
-        status: "planning",
-        proposal: {
-          title: `Custom Premium Redesign Proposal for ${lead.businessName}`,
-          price: customPrice,
-          scope: [
-            "100% Custom Responsive Layout designed with modern Swiss design conventions",
-            "SEO-optimized content framework grounding Google search keywords",
-            "Secure HTTPS/SSL Deployment on Google Cloud CDN with lightning fast speed",
-            "Integrated direct booking/reservation engine tailored to local client workflows",
-            "Google Reviews real-time synchronization widgets to display local credibility",
-            "Integrated Lead CRM Auto-Sync to funnel all client form bookings back to agency"
-          ],
-          generatedAt: new Date().toISOString(),
-          accepted: false
-        },
-        activities: [
-          {
-            id: `act_prop_${Date.now()}`,
-            timestamp: new Date().toISOString(),
-            message: `Created digital proposal with professional services quote of $${customPrice.toLocaleString()}`,
-            type: "site_build"
-          },
-          ...lead.activities
-        ]
+    try {
+      const response = await fetch(`/api/leads/${lead.id}/generate-proposal`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ price: customPrice }),
       });
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || "Failed to generate proposal");
+      }
+      const data = await response.json();
+      onUpdateLead(data.lead);
+    } catch (error: any) {
+      alert(error.message);
+    } finally {
       setCreatingProposal(false);
-    }, 1000);
+    }
   };
 
   const handleAcceptProposal = () => {

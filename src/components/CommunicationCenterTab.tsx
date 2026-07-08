@@ -186,15 +186,16 @@ export default function CommunicationCenterTab({ lead, onUpdateLead }: Communica
     }
   };
 
-  const handleSimulateWAStatus = async (status: string, customText?: string) => {
+  const handleRecordWAReply = async (customText: string) => {
+    if (!customText.trim()) return;
     setTrackingWA(true);
     try {
-      const response = await fetch(`/api/leads/${lead.id}/whatsapp/simulate-status`, {
+      const response = await fetch(`/api/leads/${lead.id}/whatsapp/record-reply`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status, replyText: customText }),
+        body: JSON.stringify({ replyText: customText }),
       });
-      if (!response.ok) throw new Error("Failed to simulate WhatsApp status callback");
+      if (!response.ok) throw new Error("Failed to record WhatsApp response");
       const data = await response.json();
       onUpdateLead(data.lead);
       setWhatsappReplyText("");
@@ -270,16 +271,16 @@ export default function CommunicationCenterTab({ lead, onUpdateLead }: Communica
     }
   };
 
-  const handleSimulateIGReply = async (customText: string) => {
+  const handleRecordIGReply = async (customText: string) => {
     if (!customText.trim()) return;
     setReplyingIG(true);
     try {
-      const response = await fetch(`/api/leads/${lead.id}/instagram/simulate-reply`, {
+      const response = await fetch(`/api/leads/${lead.id}/instagram/record-reply`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ replyText: customText }),
       });
-      if (!response.ok) throw new Error("Failed to record Instagram reply");
+      if (!response.ok) throw new Error("Failed to record Instagram response");
       const data = await response.json();
       onUpdateLead(data.lead);
       setInstagramReplyText("");
@@ -793,53 +794,26 @@ export default function CommunicationCenterTab({ lead, onUpdateLead }: Communica
                   </div>
                 )}
 
-                {/* Simulate webhook status tracking */}
-                {waSent && (
-                  <div className="space-y-3 bg-slate-900 p-3 rounded-xl border border-slate-800">
-                    <span className="text-[9px] font-mono uppercase text-slate-400 block font-bold">Simulate API Webhooks callbacks</span>
+                {/* Manual CRM response logging */}
+                {waSent && waLatestStatus !== "replied" && (
+                  <div className="space-y-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                    <span className="text-[10px] font-bold uppercase text-slate-600 block">Log Client WhatsApp Reply</span>
                     
-                    <div className="grid grid-cols-2 gap-1.5">
-                      <button
-                        onClick={() => handleSimulateWAStatus("delivered")}
-                        disabled={["delivered", "read", "replied", "meeting_scheduled"].includes(waLatestStatus)}
-                        className="py-1 px-2 bg-slate-950 border border-slate-800 hover:border-slate-700 disabled:opacity-40 rounded text-[9px] font-mono font-bold text-slate-300 cursor-pointer"
-                      >
-                        📬 Delivered Call
-                      </button>
-                      <button
-                        onClick={() => handleSimulateWAStatus("read")}
-                        disabled={!["sent", "delivered"].includes(waLatestStatus)}
-                        className="py-1 px-2 bg-slate-950 border border-slate-800 hover:border-slate-700 disabled:opacity-40 rounded text-[9px] font-mono font-bold text-slate-300 cursor-pointer"
-                      >
-                        🔵 Blue Ticks Read
-                      </button>
-                    </div>
-
-                    <div className="space-y-1.5 pt-1 border-t border-slate-800/50">
-                      <label className="block text-[8px] font-mono uppercase text-slate-500">Simulate incoming customer reply</label>
+                    <div className="space-y-2">
                       <textarea
                         value={whatsappReplyText}
                         onChange={(e) => setWhatsappReplyText(e.target.value)}
-                        placeholder="Type customer reply here..."
-                        className="w-full p-2 bg-slate-950 border border-slate-800 rounded text-[10px] text-slate-200 focus:outline-none focus:border-indigo-500 h-14"
+                        placeholder="Type the customer's text or voice-note transcription..."
+                        className="w-full p-2 bg-white border border-slate-200 rounded text-xs text-slate-800 focus:outline-none focus:border-indigo-600 h-16 font-sans placeholder-slate-400"
                       />
                       <button
-                        onClick={() => handleSimulateWAStatus("replied", whatsappReplyText)}
-                        disabled={["replied", "meeting_scheduled"].includes(waLatestStatus) || !whatsappReplyText.trim()}
-                        className="w-full py-1.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-850 disabled:text-slate-600 text-white rounded font-sans text-[10px] font-bold cursor-pointer"
+                        onClick={() => handleRecordWAReply(whatsappReplyText)}
+                        disabled={trackingWA || !whatsappReplyText.trim()}
+                        className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded font-sans text-xs font-semibold cursor-pointer transition-colors"
                       >
-                        💬 Record Customer Reply
+                        {trackingWA ? "Logging Reply..." : "Log Client Reply"}
                       </button>
                     </div>
-
-                    {waLatestStatus === "replied" && (
-                      <button
-                        onClick={() => handleSimulateWAStatus("meeting_scheduled")}
-                        className="w-full py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded font-sans text-[10px] font-bold mt-1 tracking-wide uppercase cursor-pointer"
-                      >
-                        📅 Client Booked Consultation
-                      </button>
-                    )}
                   </div>
                 )}
               </div>
@@ -938,21 +912,23 @@ export default function CommunicationCenterTab({ lead, onUpdateLead }: Communica
                   )}
 
                   {igSent && lead.instagramMessages?.[0]?.status === "sent" && (
-                    <div className="space-y-2 bg-slate-900 p-3 rounded-xl border border-slate-800">
-                      <span className="text-[9px] font-mono uppercase text-slate-400 block font-bold">Simulate IG Reply</span>
-                      <textarea
-                        value={instagramReplyText}
-                        onChange={(e) => setInstagramReplyText(e.target.value)}
-                        placeholder="Type client's reply DM..."
-                        className="w-full p-2 bg-slate-950 border border-slate-800 rounded text-[10px] text-slate-200 focus:outline-none focus:border-pink-500 h-16 font-sans"
-                      />
-                      <button
-                        onClick={() => handleSimulateIGReply(instagramReplyText)}
-                        disabled={replyingIG || !instagramReplyText.trim()}
-                        className="w-full py-1.5 bg-pink-600 hover:bg-pink-500 text-white rounded font-sans text-[10px] font-bold cursor-pointer"
-                      >
-                        {replyingIG ? "Recording..." : "Record client reply DM"}
-                      </button>
+                    <div className="space-y-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                      <span className="text-[10px] font-bold uppercase text-slate-600 block">Log Client Instagram Reply</span>
+                      <div className="space-y-2">
+                        <textarea
+                          value={instagramReplyText}
+                          onChange={(e) => setInstagramReplyText(e.target.value)}
+                          placeholder="Type customer's incoming DM message..."
+                          className="w-full p-2 bg-white border border-slate-200 rounded text-xs text-slate-800 focus:outline-none focus:border-pink-600 h-16 font-sans placeholder-slate-400"
+                        />
+                        <button
+                          onClick={() => handleRecordIGReply(instagramReplyText)}
+                          disabled={replyingIG || !instagramReplyText.trim()}
+                          className="w-full py-2 bg-pink-600 hover:bg-pink-700 disabled:bg-slate-200 disabled:text-slate-400 text-white rounded font-sans text-xs font-semibold cursor-pointer transition-colors"
+                        >
+                          {replyingIG ? "Logging DM..." : "Log Client DM"}
+                        </button>
+                      </div>
                     </div>
                   )}
 
