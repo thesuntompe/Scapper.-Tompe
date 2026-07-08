@@ -1,0 +1,6 @@
+{
+  "name": "Autonomous AI Sales & Web Builder Agent",
+  "description": "An autonomous AI Business Development, Sales, Research, and Web Development Agent that discovers local businesses, conducts deep online presence research, drafts personalized email outreach, simulates customer negotiation, and automatically designs and codes fully functional React/Tailwind websites.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
