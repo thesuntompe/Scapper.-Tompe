@@ -1,0 +1,135 @@
+{
+  "entities": {
+    "Lead": {
+      "title": "Lead",
+      "description": "Represents a business lead, including online presence metrics, contact information, email outreaches, generated website code, invoice details, and crm stages.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier of the lead"
+        },
+        "businessName": {
+          "type": "string"
+        },
+        "ownerName": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        },
+        "phone": {
+          "type": "string"
+        },
+        "websiteUrl": {
+          "type": "string"
+        },
+        "category": {
+          "type": "string"
+        },
+        "location": {
+          "type": "string"
+        },
+        "googleRating": {
+          "type": "number"
+        },
+        "reviewCount": {
+          "type": "number"
+        },
+        "leadScore": {
+          "type": "number"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "discovered",
+            "scored",
+            "outreach_drafted",
+            "emailed",
+            "replied_interested",
+            "replied_uninterested",
+            "planning",
+            "site_generated",
+            "client_review",
+            "paid_and_deployed"
+          ]
+        },
+        "emails": {
+          "type": "array",
+          "description": "List of sent and received emails."
+        },
+        "onlinePresence": {
+          "type": "object",
+          "description": "Audited details of the business web and online presence."
+        },
+        "aiResearchSummary": {
+          "type": "object",
+          "description": "Deep business intelligence and research results."
+        },
+        "websitePlan": {
+          "type": "object",
+          "description": "The sitemap and content plan for the custom website."
+        },
+        "generatedWebsite": {
+          "type": "object",
+          "description": "The generated HTML and React component code."
+        },
+        "invoice": {
+          "type": "object",
+          "description": "The billing invoice information."
+        },
+        "customDomain": {
+          "type": "object",
+          "description": "The brand custom domain mapping state."
+        },
+        "paymentMethod": {
+          "type": "string"
+        },
+        "paymentDetails": {
+          "type": "object"
+        },
+        "activities": {
+          "type": "array",
+          "description": "Historic ledger of CRM events and actions."
+        },
+        "contactConfidence": {
+          "type": "object"
+        },
+        "contactSources": {
+          "type": "object"
+        },
+        "crmStages": {
+          "type": "object"
+        },
+        "businessIntelligence": {
+          "type": "object"
+        },
+        "proposal": {
+          "type": "object"
+        },
+        "contract": {
+          "type": "object"
+        },
+        "followupAutomation": {
+          "type": "object"
+        }
+      },
+      "required": [
+        "id",
+        "businessName",
+        "ownerName",
+        "email",
+        "phone",
+        "category",
+        "location",
+        "status"
+      ]
+    }
+  },
+  "firestore": {
+    "/leads/{leadId}": {
+      "schema": "Lead",
+      "description": "Secure CRM store containing leads, emails, websites, billing, proposals, and logs."
+    }
+  }
+}

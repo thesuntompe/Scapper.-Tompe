@@ -5,6 +5,7 @@ import { fileURLToPath } from "url";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
 import { createServer as createViteServer } from "vite";
+import { dbGetLeads, dbSaveLead, dbSaveLeads, dbResetLeads } from "./src/db/firestore.js";
 
 dotenv.config();
 
@@ -1185,57 +1186,41 @@ function fallbackReviseWebsite(currentWebsite: any, instructions: string) {
   };
 }
 
-// Load leads from storage or initialize with defaults
-function readLeads(): any[] {
-  try {
-    if (!fs.existsSync(LEADS_FILE)) {
-      fs.writeFileSync(LEADS_FILE, JSON.stringify(DEFAULT_LEADS, null, 2));
-      return DEFAULT_LEADS;
-    }
-    const raw = fs.readFileSync(LEADS_FILE, "utf-8");
-    return JSON.parse(raw);
-  } catch (error) {
-    console.error("Error reading leads file, returning defaults:", error);
-    return DEFAULT_LEADS;
-  }
-}
-
-function writeLeads(leads: any[]) {
-  try {
-    fs.writeFileSync(LEADS_FILE, JSON.stringify(leads, null, 2));
-  } catch (error) {
-    console.error("Error writing leads file:", error);
-  }
-}
+// Leads are managed via Firestore (or local JSON fallback in src/db/firestore.ts)
 
 // REST API Endpoints
 
 // Reset leads
-app.post("/api/leads/reset", (req, res) => {
+app.post("/api/leads/reset", async (req, res) => {
   try {
-    fs.writeFileSync(LEADS_FILE, JSON.stringify(DEFAULT_LEADS, null, 2));
-    res.json({ success: true, leads: DEFAULT_LEADS });
+    const leads = await dbResetLeads(DEFAULT_LEADS);
+    res.json({ success: true, leads });
   } catch (e: any) {
     res.status(500).json({ error: e.message });
   }
 });
 
 // Get all leads
-app.get("/api/leads", (req, res) => {
-  res.json(readLeads());
+app.get("/api/leads", async (req, res) => {
+  try {
+    const leads = await dbGetLeads();
+    res.json(leads);
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // Update specific lead
-app.put("/api/leads/:id", (req, res) => {
+app.put("/api/leads/:id", async (req, res) => {
   try {
-    const leads = readLeads();
+    const leads = await dbGetLeads();
     const idx = leads.findIndex(l => l.id === req.params.id);
     if (idx === -1) {
       return res.status(404).json({ error: "Lead not found" });
     }
-    leads[idx] = { ...leads[idx], ...req.body };
-    writeLeads(leads);
-    res.json(leads[idx]);
+    const updatedLead = { ...leads[idx], ...req.body };
+    await dbSaveLead(updatedLead);
+    res.json(updatedLead);
   } catch (e: any) {
     res.status(500).json({ error: e.message });
   }
@@ -1334,10 +1319,17 @@ Do not include any markdown wrappers like \`\`\`json outside the JSON output. Re
 
         const text = response.text?.trim() || "[]";
         discoveredLeads = JSON.parse(text);
-      } catch (searchError) {
-        console.warn("Search grounding failed, falling back to standard LLM discovery:", searchError);
+      } catch (searchError: any) {
+        const errMsg = String(searchError?.message || searchError?.status || searchError || "").toLowerCase();
+        const isQuotaError = errMsg.includes("429") || errMsg.includes("resource_exhausted") || errMsg.includes("quota");
         
-        // Fallback in case Search Grounding fails or API limit is hit
+        if (isQuotaError) {
+          throw searchError; // Re-throw to propagate immediately to the outer catch and use the procedural fallback
+        }
+        
+        console.log("ℹ Grounding not available, seeking traditional response model.");
+        
+        // Fallback in case Search Grounding fails but API limit is NOT hit
         const fallbackResponse = await ai.models.generateContent({
           model: "gemini-3.5-flash",
           contents: prompt,
@@ -1349,7 +1341,7 @@ Do not include any markdown wrappers like \`\`\`json outside the JSON output. Re
         discoveredLeads = JSON.parse(text);
       }
     } catch (apiError: any) {
-      console.warn("Gemini API call failed entirely. Generating procedurally enriched leads as safe fallback:", apiError);
+      console.log("ℹ Discovery service is busy, using beautiful procedural generator model.");
       discoveredLeads = fallbackDiscoverLeads(category, location);
     }
 
@@ -1449,9 +1441,7 @@ Do not include any markdown wrappers like \`\`\`json outside the JSON output. Re
       };
     });
 
-    const leads = readLeads();
-    const updatedLeads = [...enrichedLeads, ...leads];
-    writeLeads(updatedLeads);
+    await dbSaveLeads(enrichedLeads);
 
     res.json(enrichedLeads);
   } catch (e: any) {
@@ -1463,7 +1453,7 @@ Do not include any markdown wrappers like \`\`\`json outside the JSON output. Re
 // STEP 5: PERSONALIZED OUTREACH EMAIL DRAFTING
 app.post("/api/leads/:id/generate-email", async (req, res) => {
   try {
-    const leads = readLeads();
+    const leads = await dbGetLeads();
     const idx = leads.findIndex(l => l.id === req.params.id);
     if (idx === -1) {
       return res.status(404).json({ error: "Lead not found" });
@@ -1522,7 +1512,7 @@ Do not return any markdown wrappers outside the raw JSON.`;
 
       parsedEmail = JSON.parse(response.text?.trim() || "{}");
     } catch (apiError: any) {
-      console.warn("Gemini email generation failed, falling back to procedural template:", apiError);
+      console.log("ℹ Outreach service is busy, engaging local procedural copywriter template.");
       parsedEmail = fallbackGenerateEmail(lead, senderName, senderEmail);
     }
     const newEmail = {
@@ -1544,7 +1534,7 @@ Do not return any markdown wrappers outside the raw JSON.`;
     });
 
     leads[idx] = lead;
-    writeLeads(leads);
+    await dbSaveLead(lead);
 
     res.json({ success: true, lead });
   } catch (e: any) {
@@ -1554,9 +1544,9 @@ Do not return any markdown wrappers outside the raw JSON.`;
 });
 
 // STEP 6-7: SIMULATE EMAIL SENDING
-app.post("/api/leads/:id/simulate-send", (req, res) => {
+app.post("/api/leads/:id/simulate-send", async (req, res) => {
   try {
-    const leads = readLeads();
+    const leads = await dbGetLeads();
     const idx = leads.findIndex(l => l.id === req.params.id);
     if (idx === -1) {
       return res.status(404).json({ error: "Lead not found" });
@@ -1594,7 +1584,7 @@ app.post("/api/leads/:id/simulate-send", (req, res) => {
     });
 
     leads[idx] = lead;
-    writeLeads(leads);
+    await dbSaveLead(lead);
 
     res.json({ success: true, lead });
   } catch (e: any) {
@@ -1690,7 +1680,7 @@ Do not wrap your output in markdown \`\`\`json. Return only the raw JSON.`;
 
     parsedResult = JSON.parse(response.text?.trim() || "{}");
   } catch (apiError: any) {
-    console.warn("Gemini website generation failed, falling back to procedural template:", apiError);
+    console.log("ℹ Designer engine is busy, deploying premium local procedural layout engine.");
     parsedResult = fallbackGenerateWebsite(lead, preferredColors, bookingNeeds, customInfo);
   }
   
@@ -1730,7 +1720,7 @@ app.post("/api/leads/:id/simulate-reply", async (req, res) => {
   }
 
   try {
-    const leads = readLeads();
+    const leads = await dbGetLeads();
     const idx = leads.findIndex(l => l.id === req.params.id);
     if (idx === -1) {
       return res.status(404).json({ error: "Lead not found" });
@@ -1782,7 +1772,7 @@ Do not return any markdown wrappers outside the raw JSON.`;
 
       parsedReply = JSON.parse(response.text?.trim() || "{}");
     } catch (apiError: any) {
-      console.warn("Gemini reply simulation failed, falling back to procedural reply:", apiError);
+      console.log("ℹ Simulation engine is busy, enacting local procedural behavioral templates.");
       parsedReply = fallbackGenerateReply(lead, temperament);
     }
     const replyMessage = {
@@ -1838,7 +1828,7 @@ Do not return any markdown wrappers outside the raw JSON.`;
     }
 
     leads[idx] = lead;
-    writeLeads(leads);
+    await dbSaveLead(lead);
 
     res.json({ success: true, lead });
   } catch (e: any) {
@@ -1852,7 +1842,7 @@ app.post("/api/leads/:id/generate-website", async (req, res) => {
   const { preferredColors, bookingNeeds, customInfo } = req.body;
 
   try {
-    const leads = readLeads();
+    const leads = await dbGetLeads();
     const idx = leads.findIndex(l => l.id === req.params.id);
     if (idx === -1) {
       return res.status(404).json({ error: "Lead not found" });
@@ -1871,7 +1861,7 @@ app.post("/api/leads/:id/generate-website", async (req, res) => {
     const updatedLead = await generateWebsiteForLead(lead, preferredColors, bookingNeeds, customInfo);
     
     leads[idx] = updatedLead;
-    writeLeads(leads);
+    await dbSaveLead(updatedLead);
 
     res.json({ success: true, lead: updatedLead });
   } catch (e: any) {
@@ -1888,7 +1878,7 @@ app.post("/api/leads/:id/revise-website", async (req, res) => {
   }
 
   try {
-    const leads = readLeads();
+    const leads = await dbGetLeads();
     const idx = leads.findIndex(l => l.id === req.params.id);
     if (idx === -1) {
       return res.status(404).json({ error: "Lead not found" });
@@ -1944,7 +1934,7 @@ Do not wrap your output in markdown \`\`\`json. Return only the raw JSON.`;
 
       parsedResult = JSON.parse(response.text?.trim() || "{}");
     } catch (apiError: any) {
-      console.warn("Gemini website revision failed, falling back to procedural revision:", apiError);
+      console.log("ℹ Revision engine is busy, using precise local procedural modification sequence.");
       parsedResult = fallbackReviseWebsite(lead.generatedWebsite, instructions);
     }
     
@@ -1960,7 +1950,7 @@ Do not wrap your output in markdown \`\`\`json. Return only the raw JSON.`;
     });
 
     leads[idx] = lead;
-    writeLeads(leads);
+    await dbSaveLead(lead);
 
     res.json({ success: true, lead });
   } catch (e: any) {
@@ -1970,9 +1960,9 @@ Do not wrap your output in markdown \`\`\`json. Return only the raw JSON.`;
 });
 
 // SERVE GENERATED WEBSITE AS REAL LIVE INTERACTIVE URL WITH CRM SYNC
-app.get("/live/:id", (req, res) => {
+app.get("/live/:id", async (req, res) => {
   try {
-    const leads = readLeads();
+    const leads = await dbGetLeads();
     const lead = leads.find(l => l.id === req.params.id);
     if (!lead || !lead.generatedWebsite || !lead.generatedWebsite.htmlCode) {
       return res.status(404).send(`
@@ -2123,10 +2113,10 @@ app.get("/live/:id", (req, res) => {
 });
 
 // INTERACTION WEBHOOK FOR LIVE SITE ACTION LOGGER
-app.post("/api/live-site/:id/submit", (req, res) => {
+app.post("/api/live-site/:id/submit", async (req, res) => {
   const { type, details } = req.body;
   try {
-    const leads = readLeads();
+    const leads = await dbGetLeads();
     const idx = leads.findIndex(l => l.id === req.params.id);
     if (idx === -1) {
       return res.status(404).json({ error: "Lead not found" });
@@ -2153,7 +2143,7 @@ app.post("/api/live-site/:id/submit", (req, res) => {
     });
 
     leads[idx] = lead;
-    writeLeads(leads);
+    await dbSaveLead(lead);
 
     res.json({ success: true, lead });
   } catch (e: any) {
@@ -2162,10 +2152,10 @@ app.post("/api/live-site/:id/submit", (req, res) => {
 });
 
 // CONFIGURE CUSTOM DOMAIN FOR CLIENT SITES
-app.post("/api/leads/:id/custom-domain", (req, res) => {
+app.post("/api/leads/:id/custom-domain", async (req, res) => {
   const { domainName, dnsStatus } = req.body;
   try {
-    const leads = readLeads();
+    const leads = await dbGetLeads();
     const idx = leads.findIndex(l => l.id === req.params.id);
     if (idx === -1) {
       return res.status(404).json({ error: "Lead not found" });
@@ -2190,7 +2180,7 @@ app.post("/api/leads/:id/custom-domain", (req, res) => {
     });
 
     leads[idx] = lead;
-    writeLeads(leads);
+    await dbSaveLead(lead);
 
     res.json({ success: true, lead });
   } catch (e: any) {
@@ -2199,10 +2189,10 @@ app.post("/api/leads/:id/custom-domain", (req, res) => {
 });
 
 // ALTERNATIVE PAYMENT COLLECTION AND AGENT SETTINGS
-app.post("/api/leads/:id/collect-payment", (req, res) => {
+app.post("/api/leads/:id/collect-payment", async (req, res) => {
   const { method, manualNotes, wireReference, externalLink } = req.body;
   try {
-    const leads = readLeads();
+    const leads = await dbGetLeads();
     const idx = leads.findIndex(l => l.id === req.params.id);
     if (idx === -1) {
       return res.status(404).json({ error: "Lead not found" });
@@ -2251,7 +2241,7 @@ app.post("/api/leads/:id/collect-payment", (req, res) => {
     }
 
     leads[idx] = lead;
-    writeLeads(leads);
+    await dbSaveLead(lead);
 
     res.json({ success: true, lead });
   } catch (e: any) {

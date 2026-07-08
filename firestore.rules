@@ -1,0 +1,56 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Global Safety Net (Default Deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+    
+    // Global Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+    
+    function incoming() {
+      return request.resource.data;
+    }
+    
+    function existing() {
+      return resource.data;
+    }
+    
+    // Check if the incoming lead complies with type and size limits
+    function isValidLead(data) {
+      return data.id is string
+        && data.businessName is string && data.businessName.size() <= 256
+        && data.ownerName is string && data.ownerName.size() <= 128
+        && data.email is string && data.email.size() <= 150
+        && data.phone is string && data.phone.size() <= 40
+        && data.category is string && data.category.size() <= 100
+        && data.location is string && data.location.size() <= 100
+        && data.status is string && data.status.size() <= 50;
+    }
+
+    match /leads/{leadId} {
+      // Allow read operations for CRM agents (via server proxy)
+      allow get: if isValidId(leadId);
+      allow list: if true;
+      
+      // Allow creations with validated schema shapes
+      allow create: if isValidId(leadId)
+        && isValidLead(incoming());
+        
+      // Allow updates with schema validation and ensuring immutable core fields
+      allow update: if isValidId(leadId)
+        && isValidLead(incoming())
+        && incoming().id == existing().id;
+        
+      allow delete: if isValidId(leadId);
+    }
+  }
+}
