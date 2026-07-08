@@ -10,8 +10,8 @@ interface EmailOutreachTabProps {
 export default function EmailOutreachTab({ lead, onUpdateLead }: EmailOutreachTabProps) {
   const [drafting, setDrafting] = useState(false);
   const [sending, setSending] = useState(false);
-  const [replying, setReplying] = useState(false);
-  const [temperament, setTemperament] = useState<"Interested" | "Question" | "Maybe" | "Uninterested">("Interested");
+  const [recordingReply, setRecordingReply] = useState(false);
+  const [replyText, setReplyText] = useState("");
   
   // Persisted sender identity ("My Mail")
   const [senderName, setSenderName] = useState(() => localStorage.getItem("sterling_sender_name") || "Alex Sterling / Sterling & Co. Digital Agency");
@@ -44,10 +44,10 @@ export default function EmailOutreachTab({ lead, onUpdateLead }: EmailOutreachTa
   const handleSendEmail = async () => {
     setSending(true);
     try {
-      const response = await fetch(`/api/leads/${lead.id}/simulate-send`, {
+      const response = await fetch(`/api/leads/${lead.id}/mark-sent`, {
         method: "POST",
       });
-      if (!response.ok) throw new Error("Failed to send email");
+      if (!response.ok) throw new Error("Failed to record email as sent");
       const data = await response.json();
       onUpdateLead(data.lead);
     } catch (e) {
@@ -57,21 +57,23 @@ export default function EmailOutreachTab({ lead, onUpdateLead }: EmailOutreachTa
     }
   };
 
-  const handleSimulateReply = async () => {
-    setReplying(true);
+  const handleRecordReply = async (textToSubmit: string) => {
+    if (!textToSubmit.trim()) return;
+    setRecordingReply(true);
     try {
-      const response = await fetch(`/api/leads/${lead.id}/simulate-reply`, {
+      const response = await fetch(`/api/leads/${lead.id}/record-reply`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ temperament, autoBuildWebsite: autoBuild }),
+        body: JSON.stringify({ replyText: textToSubmit, autoBuildWebsite: autoBuild }),
       });
-      if (!response.ok) throw new Error("Failed to simulate reply");
+      if (!response.ok) throw new Error("Failed to record client reply");
       const data = await response.json();
       onUpdateLead(data.lead);
+      setReplyText("");
     } catch (e) {
       console.error(e);
     } finally {
-      setReplying(false);
+      setRecordingReply(false);
     }
   };
 
@@ -150,13 +152,13 @@ export default function EmailOutreachTab({ lead, onUpdateLead }: EmailOutreachTa
               </div>
             )}
 
-            {/* Stage 2: Send Draft */}
+             {/* Stage 2: Send Draft */}
             {activeDraft && (
               <div className="space-y-3">
                 <div className="p-3 bg-indigo-500/5 border border-indigo-500/10 rounded-lg">
                   <span className="text-[10px] font-mono uppercase text-indigo-400 font-bold block">Status: Outreach Drafted</span>
                   <p className="text-xs text-slate-400 mt-1 font-sans">
-                    A personalized draft is compiled. Review the text in the outbox editor and trigger the mock Gmail API pipeline to deliver it.
+                    A personalized draft is compiled. Review the text in the outbox editor, send it via your email app, and click below to record as sent.
                   </p>
                 </div>
                 
@@ -168,12 +170,12 @@ export default function EmailOutreachTab({ lead, onUpdateLead }: EmailOutreachTa
                   {sending ? (
                     <>
                       <Loader2 size={14} className="animate-spin" />
-                      Transmitting via GAPI...
+                      Recording Send...
                     </>
                   ) : (
                     <>
                       <Send size={14} />
-                      Transmit Outreach Email
+                      Approve & Mark as Sent
                     </>
                   )}
                 </button>
@@ -204,68 +206,87 @@ export default function EmailOutreachTab({ lead, onUpdateLead }: EmailOutreachTa
               </div>
             )}
 
-            {/* Stage 3: Awaiting / Simulate Customer Reply */}
+            {/* Stage 3: Awaiting / Record Customer Reply */}
             {lead.status === "emailed" && (
               <div className="space-y-3">
                 <div className="p-3 bg-amber-500/5 border border-amber-500/10 rounded-lg">
                   <span className="text-[10px] font-mono uppercase text-amber-400 font-bold block">Status: Outreach Sent</span>
                   <p className="text-xs text-slate-400 mt-1 font-sans">
-                    Awaiting client response. Simulate their reaction to test the qualification funnel and website builder!
+                    Awaiting client response. Paste the email reply received from the client below to analyze intent and qualify!
                   </p>
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="block text-[10px] font-mono uppercase text-slate-500">Choose temperament</label>
-                  <select
-                    value={temperament}
-                    onChange={(e) => setTemperament(e.target.value as any)}
-                    className="w-full p-2 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
-                  >
-                    <option value="Interested">Enthusiastic & Interested</option>
-                    <option value="Maybe">Hesitant (Maybe / Show Mockup)</option>
-                    <option value="Question">Skeptical (Asks Questions)</option>
-                    <option value="Uninterested">Polite Rejection (No Thanks)</option>
-                  </select>
+                  <div className="flex justify-between items-center">
+                    <label className="block text-[10px] font-mono uppercase text-slate-400 font-bold">Paste Client Reply Email</label>
+                  </div>
+                  <textarea
+                    value={replyText}
+                    onChange={(e) => setReplyText(e.target.value)}
+                    placeholder="Paste email response text here..."
+                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 focus:outline-none focus:border-indigo-500 h-24 font-sans"
+                  />
                 </div>
 
                 {/* Automation trigger checkbox */}
-                {(temperament === "Interested" || temperament === "Maybe" || temperament === "Question") && (
-                  <div className="flex items-center gap-2 py-1.5 px-2.5 bg-slate-900/50 border border-slate-800/80 rounded-lg">
-                    <input
-                      type="checkbox"
-                      id="autoBuild"
-                      checked={autoBuild}
-                      onChange={(e) => {
-                        setAutoBuild(e.target.checked);
-                        localStorage.setItem("sterling_auto_build", e.target.checked ? "true" : "false");
-                      }}
-                      className="rounded border-slate-800 bg-slate-950 text-indigo-500 focus:ring-indigo-500/20 cursor-pointer h-3.5 w-3.5"
-                    />
-                    <label htmlFor="autoBuild" className="text-[9px] font-mono uppercase tracking-wider text-slate-300 cursor-pointer select-none font-bold">
-                      Auto-build mockup website
-                    </label>
-                  </div>
-                )}
+                <div className="flex items-center gap-2 py-1.5 px-2.5 bg-slate-900/50 border border-slate-800/80 rounded-lg">
+                  <input
+                    type="checkbox"
+                    id="autoBuild"
+                    checked={autoBuild}
+                    onChange={(e) => {
+                      setAutoBuild(e.target.checked);
+                      localStorage.setItem("sterling_auto_build", e.target.checked ? "true" : "false");
+                    }}
+                    className="rounded border-slate-800 bg-slate-950 text-indigo-500 focus:ring-indigo-500/20 cursor-pointer h-3.5 w-3.5"
+                  />
+                  <label htmlFor="autoBuild" className="text-[9px] font-mono uppercase tracking-wider text-slate-300 cursor-pointer select-none font-bold">
+                    Auto-build mockup website
+                  </label>
+                </div>
 
                 <button
-                  onClick={handleSimulateReply}
-                  disabled={replying}
-                  className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 text-white rounded-lg text-xs font-semibold font-sans flex items-center justify-center gap-2 transition-all"
+                  onClick={() => handleRecordReply(replyText)}
+                  disabled={recordingReply || !replyText.trim()}
+                  className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 disabled:text-slate-500 text-white rounded-lg text-xs font-semibold font-sans flex items-center justify-center gap-2 transition-all"
                 >
-                  {replying ? (
+                  {recordingReply ? (
                     <>
                       <Loader2 size={14} className="animate-spin" />
-                      {autoBuild && (temperament === "Interested" || temperament === "Maybe" || temperament === "Question")
-                        ? "Replying & Building Mockup..."
-                        : "Generating reply..."}
+                      Analyzing Reply...
                     </>
                   ) : (
                     <>
                       <Reply size={14} />
-                      Simulate Client Reply
+                      AI-Analyze & Record Reply
                     </>
                   )}
                 </button>
+
+                {/* Templates helper */}
+                <div className="pt-2 border-t border-slate-900">
+                  <span className="text-[10px] font-mono uppercase text-slate-500 block font-bold mb-1.5">Load Sample Client Reply</span>
+                  <div className="flex flex-col gap-1.5">
+                    <button
+                      onClick={() => setReplyText(`Hey! Thanks for reaching out. Our website is indeed super outdated and hasn't been updated in years. We've been wanting to remodel it. Can you make something with navy blue and gold? I'd love to see what you can build. Thanks, Carlos`)}
+                      className="text-left text-[9px] font-sans text-slate-400 hover:text-white p-1.5 bg-slate-900 rounded border border-slate-800 hover:border-slate-700 transition-all cursor-pointer"
+                    >
+                      👍 <strong>Carlos:</strong> "Website is super outdated, make something with navy blue and gold..."
+                    </button>
+                    <button
+                      onClick={() => setReplyText(`Hi. How much does a website like this cost? And are there any monthly fees? Let me see the free mockup first before we make any decisions. Thanks, Mateo.`)}
+                      className="text-left text-[9px] font-sans text-slate-400 hover:text-white p-1.5 bg-slate-900 rounded border border-slate-800 hover:border-slate-700 transition-all cursor-pointer"
+                    >
+                      🤔 <strong>Mateo:</strong> "How much does a website like this cost? Let me see the mockup first..."
+                    </button>
+                    <button
+                      onClick={() => setReplyText(`Thanks for the email, but we already have a web designer we work with. No thank you. Best, Gary`)}
+                      className="text-left text-[9px] font-sans text-slate-400 hover:text-white p-1.5 bg-slate-900 rounded border border-slate-800 hover:border-slate-700 transition-all cursor-pointer"
+                    >
+                      👎 <strong>Gary:</strong> "Already have a web designer we work with. No thank you..."
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
 

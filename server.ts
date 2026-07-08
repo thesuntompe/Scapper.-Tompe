@@ -47,232 +47,8 @@ function getGeminiClient(): GoogleGenAI {
   return aiInstance;
 }
 
-// Pre-populated realistic database for a premium "first-launch" experience
-const DEFAULT_LEADS = [
-  {
-    id: "lead_1",
-    businessName: "Guacamole Grill",
-    ownerName: "Mateo Silva",
-    email: "info@guacamolegrillmiami.com",
-    phone: "(305) 555-8291",
-    websiteUrl: "",
-    category: "Mexican Restaurant",
-    location: "Miami, FL",
-    googleRating: 4.6,
-    reviewCount: 142,
-    socialMedia: {
-      yelp: "https://yelp.com/biz/guacamole-grill-miami",
-      facebook: "https://facebook.com/guacamolegrillmiami",
-      instagram: "https://instagram.com/guacamolegrillmiami"
-    },
-    onlinePresence: {
-      hasWebsite: false,
-      loadingSpeed: "N/A",
-      mobileResponsive: false,
-      designQuality: "poor",
-      seoScore: 0,
-      securitySsl: false,
-      improvementScore: 100,
-      issuesDetected: [
-        "No official website exists",
-        "Losing customers searching for menus on Google Maps",
-        "No digital menu structure",
-        "Forced to rely entirely on high-commission third-party delivery services"
-      ],
-      accessibilityScore: 0,
-      hasBookingCapability: false,
-      googleReviewsIntegration: false,
-      websiteAgeYears: undefined,
-      onlySocialPresence: true,
-      websiteQualityScore: 0
-    },
-    aiResearchSummary: {
-      history: "Established in 2021, Guacamole Grill is a family-owned Mexican eatery in Miami specializing in street tacos, hand-mashed tableside guacamole, and fresh lime margaritas. They have gained a strong local following but lack a solid digital presence.",
-      services: ["Tableside Guacamole", "Street Tacos", "Catering Services", "Private Parties"],
-      targetCustomers: "Local foodies, young professionals, families looking for authentic, fast-casual Mexican food in the Miami area.",
-      competitors: ["Coyo Taco", "Bodega Taqueria", "Chipotle"],
-      strengths: ["Highly authentic recipes", "Excellent ratings on Yelp and Google", "Active Instagram following"],
-      weaknesses: ["No online menu", "No direct online table reservation or pickup ordering", "Zero website SEO footprint"],
-      marketPosition: "Highly rated local favorite with major growth potential once direct online ordering is established.",
-      faqs: [
-        { "q": "Do you offer vegetarian options?", "a": "Yes! We have delicious black bean tacos, vegetarian quesadillas, and all our guacamole is 100% plant-based." },
-        { "q": "Can I book a private catering event?", "a": "Yes, we offer custom catering packages for office parties, birthdays, and weddings." }
-      ]
-    },
-    leadScore: 92,
-    status: "discovered",
-    emails: [],
-    websitePlan: {
-      sitemap: [],
-      contentPlan: ""
-    },
-    generatedWebsite: {
-      revisionsCount: 0
-    },
-    activities: [
-      {
-        id: "act_1",
-        timestamp: new Date(Date.now() - 3600000 * 4).toISOString(),
-        message: "Discovered business 'Guacamole Grill' on Google Maps in Miami, FL. No website detected.",
-        type: "research"
-      },
-      {
-        id: "act_2",
-        timestamp: new Date(Date.now() - 3600000 * 3.9).toISOString(),
-        message: "Analyzed presence. Generated website improvement score: 100/100. High Priority Lead.",
-        type: "research"
-      },
-      {
-        id: "act_3",
-        timestamp: new Date(Date.now() - 3600000 * 3.8).toISOString(),
-        message: "Calculated Lead Score: 92/100 (+40 for no website, +20 for high ratings, +10 for active social, +22 for high local search demand).",
-        type: "score"
-      }
-    ],
-    contactConfidence: {
-      emailConfidence: 85,
-      phoneConfidence: 95,
-      ownerConfidence: 90,
-      overallScore: 90
-    },
-    contactSources: {
-      emailSource: "Official Facebook Contact Tab",
-      phoneSource: "Google Maps Verified GMB Profile",
-      ownerSource: "Florida LLC Directory Filings"
-    },
-    crmStages: {
-      currentStage: "discovered",
-      history: [
-        { stage: "discovered", updatedAt: new Date(Date.now() - 3600000 * 4).toISOString() }
-      ]
-    },
-    businessIntelligence: {
-      competitorSEO: [
-        { competitor: "Coyo Taco", score: 85 },
-        { competitor: "Bodega Taqueria", score: 78 }
-      ],
-      revenueOpportunityEstimated: 45000,
-      seoOpportunityScore: 95,
-      estimatedRoiPercent: 420
-    }
-  },
-  {
-    id: "lead_2",
-    businessName: "ProTech Plumbers",
-    ownerName: "Gary Henderson",
-    email: "contact@protechplumbingaustin.net",
-    phone: "(512) 555-0143",
-    websiteUrl: "http://protechplumbingaustin.net",
-    category: "Plumbing Services",
-    location: "Austin, TX",
-    googleRating: 4.2,
-    reviewCount: 89,
-    socialMedia: {
-      yelp: "https://yelp.com/biz/protech-plumbers-austin",
-      facebook: "https://facebook.com/protechplumbingaustin"
-    },
-    onlinePresence: {
-      hasWebsite: true,
-      loadingSpeed: "slow",
-      mobileResponsive: false,
-      designQuality: "poor",
-      seoScore: 35,
-      securitySsl: false,
-      improvementScore: 82,
-      issuesDetected: [
-        "Website is not secure (Missing HTTPS/SSL certificate)",
-        "Not mobile responsive (layout is completely broken on smartphones)",
-        "Extremely slow loading speed (7.8 seconds on mobile 4G)",
-        "Outdated 2008-style design, pixelated images",
-        "No direct emergency booking or dispatch scheduling",
-        "Missing clear Call-To-Action buttons"
-      ],
-      accessibilityScore: 28,
-      hasBookingCapability: false,
-      googleReviewsIntegration: false,
-      websiteAgeYears: 8,
-      onlySocialPresence: false,
-      websiteQualityScore: 25
-    },
-    aiResearchSummary: {
-      history: "Gary Henderson started ProTech Plumbers in 2012. They offer full residential and commercial plumbing repairs, leak detections, water heater replacements, and 24/7 emergency services. Their current website was built by Gary's nephew in 2012 and hasn't been updated since.",
-      services: ["24/7 Emergency Repairs", "Drain Cleaning", "Water Heater Installation", "Sewer Line Inspections"],
-      targetCustomers: "Homeowners, landlords, and small businesses in the greater Austin area needing urgent or planned plumbing help.",
-      competitors: ["Radiant Plumbing & Air", "S&D Plumbing", "Austin Plumbers Pro"],
-      strengths: ["Highly skilled licensed master plumbers", "Strong 24/7 emergency dispatch service", "Punctual and reliable reputation"],
-      weaknesses: ["Outdated digital storefront causing loss of premium residential clients", "Broken mobile layout prevents on-the-go emergency calls", "Poor SEO ranking"],
-      marketPosition: "Highly competent service provider trapped behind a broken, unsecure website that looks untrustworthy.",
-      faqs: [
-        { "q": "Do you charge extra for emergency after-hours calls?", "a": "We provide transparent, upfront flat-rates. Emergency dispatch may carry a standard service fee, which we always explain before arriving." }
-      ]
-    },
-    leadScore: 85,
-    status: "outreach_drafted",
-    emails: [
-      {
-        id: "em_1",
-        subject: "Quick question regarding ProTech Plumbers' mobile booking & SSL",
-        body: "Hi Gary,\n\nI hope this email finds you well!\n\nI was looking for a reliable local plumber in Austin for some residential drain work, and ProTech Plumbers came highly recommended with your excellent 4.2-star rating on Google. It's clear your team does fantastic, trustworthy work.\n\nWhile trying to book on my phone, I noticed that your website (protechplumbingaustin.net) isn't mobile-friendly, which makes it quite hard to navigate. Also, Chrome flags the site as 'Not Secure' due to a missing SSL certificate—which can unfortunately turn away premium residential customers who might worry about security.\n\nI'm with a local digital design agency, and we've actually designed a modern, secure, and lightning-fast emergency plumbing website framework specifically for teams like ProTech. It includes instant 1-click mobile booking, click-to-call, and proper SSL protection to build instant trust.\n\nI'd love to show you what a modern online storefront could look like for your business. Would you be open to me drafting a completely FREE homepage mockup for ProTech Plumbers? No strings attached, I can send a preview link over by Thursday.\n\nLet me know what you think!\n\nBest regards,\n\nAlex Sterling\nLead Designer & Researcher\nSterling & Co. Digital Agency",
-        type: "initial_outreach",
-        sender: "agent"
-      }
-    ],
-    websitePlan: {
-      sitemap: [],
-      contentPlan: ""
-    },
-    generatedWebsite: {
-      revisionsCount: 0
-    },
-    activities: [
-      {
-        id: "act_4",
-        timestamp: new Date(Date.now() - 3600000 * 12).toISOString(),
-        message: "Discovered Gary Henderson's email and details for ProTech Plumbers. Current website detected: http://protechplumbingaustin.net",
-        type: "research"
-      },
-      {
-        id: "act_5",
-        timestamp: new Date(Date.now() - 3600000 * 11.5).toISOString(),
-        message: "Conducted automated website audit. SEO: 35/100, Speed: Slow, Mobile: Fail, SSL: Missing. Improvement Score: 82/100.",
-        type: "research"
-      },
-      {
-        id: "act_6",
-        timestamp: new Date(Date.now() - 3600000 * 11).toISOString(),
-        message: "Generated personalized outreach email targeting mobile booking & SSL warning.",
-        type: "outreach"
-      }
-    ],
-    contactConfidence: {
-      emailConfidence: 90,
-      phoneConfidence: 98,
-      ownerConfidence: 90,
-      overallScore: 92
-    },
-    contactSources: {
-      emailSource: "Austin Chamber of Commerce Directory",
-      phoneSource: "Verified Google Business Profile",
-      ownerSource: "Texas LLC Corporate Portal"
-    },
-    crmStages: {
-      currentStage: "outreach_drafted",
-      history: [
-        { stage: "discovered", updatedAt: new Date(Date.now() - 3600000 * 12).toISOString() },
-        { stage: "outreach_drafted", updatedAt: new Date(Date.now() - 3600000 * 11).toISOString() }
-      ]
-    },
-    businessIntelligence: {
-      competitorSEO: [
-        { competitor: "Radiant Plumbing & Air", score: 92 },
-        { competitor: "S&D Plumbing", score: 79 }
-      ],
-      revenueOpportunityEstimated: 120000,
-      seoOpportunityScore: 85,
-      estimatedRoiPercent: 350
-    }
-  }
-];
+// Empty database ledger for real production lead tracking
+const DEFAULT_LEADS: any[] = [];
 
 // Fallback generators in case Gemini API is rate-limited (429) or fails
 function fallbackDiscoverLeads(category: string, location: string): any[] {
@@ -1543,8 +1319,8 @@ Do not return any markdown wrappers outside the raw JSON.`;
   }
 });
 
-// STEP 6-7: SIMULATE EMAIL SENDING
-app.post("/api/leads/:id/simulate-send", async (req, res) => {
+// STEP 6-7: RECORD EMAIL AS SENT
+app.post("/api/leads/:id/mark-sent", async (req, res) => {
   try {
     const leads = await dbGetLeads();
     const idx = leads.findIndex(l => l.id === req.params.id);
@@ -1553,16 +1329,8 @@ app.post("/api/leads/:id/simulate-send", async (req, res) => {
     }
     const lead = leads[idx];
 
-    // Strict Confidence Score Enforcer: Block outreach if confidence is below 70%
-    const confidenceScore = lead.contactConfidence?.overallScore ?? 100;
-    if (confidenceScore < 70) {
-      return res.status(400).json({ 
-        error: `Outreach Transmission Blocked: Contact confidence score is ${confidenceScore}%, which is below the required 70% threshold.` 
-      });
-    }
-
     if (lead.emails.length === 0) {
-      return res.status(400).json({ error: "No email draft to send. Generate one first." });
+      return res.status(400).json({ error: "No email draft to mark sent. Generate one first." });
     }
 
     // Update the last email sentAt and messageId
@@ -1579,7 +1347,7 @@ app.post("/api/leads/:id/simulate-send", async (req, res) => {
     lead.activities.unshift({
       id: `act_${lead.id}_send`,
       timestamp: new Date().toISOString(),
-      message: `Outreach email successfully sent to ${lead.email} via Gmail API. Stored Message ID: ${lead.emails[0].messageId}`,
+      message: `Outreach email recorded as sent to ${lead.email}. Reference Message ID: ${lead.emails[0].messageId}`,
       type: "outreach"
     });
 
@@ -1712,11 +1480,11 @@ Do not wrap your output in markdown \`\`\`json. Return only the raw JSON.`;
   return lead;
 }
 
-// STEP 7-8: SIMULATE CUSTOMER REPLY (INTERACTION GENERATION)
-app.post("/api/leads/:id/simulate-reply", async (req, res) => {
-  const { temperament, autoBuildWebsite } = req.body; // 'Interested' | 'Question' | 'Maybe' | 'Uninterested'
-  if (!temperament) {
-    return res.status(400).json({ error: "Temperament is required" });
+// STEP 7-8: RECORD REAL CUSTOMER REPLY & ANALYZE INTENT VIA GEMINI
+app.post("/api/leads/:id/record-reply", async (req, res) => {
+  const { replyText, autoBuildWebsite } = req.body;
+  if (!replyText || !replyText.trim()) {
+    return res.status(400).json({ error: "Reply text is required" });
   }
 
   try {
@@ -1729,38 +1497,37 @@ app.post("/api/leads/:id/simulate-reply", async (req, res) => {
 
     const outreachEmail = lead.emails.find(e => e.sender === "agent");
     if (!outreachEmail) {
-      return res.status(400).json({ error: "Cannot simulate response. No outreach email has been drafted or sent yet." });
+      return res.status(400).json({ error: "Cannot record reply. No outreach email has been recorded yet." });
     }
 
     const ai = getGeminiClient();
-    const prompt = `You are "${lead.ownerName}", the owner of "${lead.businessName}". You just received an email proposal from a local web design consultant offering a free homepage mockup because your website is either missing, slow, or insecure.
+    const prompt = `You are an expert lead qualification AI assistant. Your task is to analyze an incoming client email reply text to determine the prospect's intent and preferences.
 
-Here is the email you received:
+Here is the email proposal that was sent to them:
 Subject: ${outreachEmail.subject}
 Body:
 ${outreachEmail.body}
 
-Write your email reply based on the temperament: "${temperament}".
-Temperament Rules:
-1. "Interested": You are excited! You admit that your website is indeed old or non-existent, and you have been meaning to fix it. You have some preferences: you'd like the colors to be professional (suggest some fitting for your brand), you need a booking/contact form, and you ask about how much it might cost and how long it takes.
-2. "Question": You have a specific question first. For example, you ask if the site will be mobile-friendly, if they can integrate Yelp reviews, or if they handle custom logos.
-3. "Maybe": You are hesitant because you are busy, but you agree to see the free homepage mockup first before discussing pricing.
-4. "Uninterested": Polite rejection. You say you are not looking to update your digital presence or don't have the budget right now.
+Here is the client's actual email reply:
+"${replyText}"
 
-Write the response. Keep it highly realistic:
-- Short (4-8 sentences).
-- Match the personality of a busy local small business owner.
-- Simple, direct grammar, perhaps slightly casual.
-- Include a standard sign-off with your name ("Mateo", "Gary", etc.) and phone number.
+Analyze this reply and determine:
+1. "temperament": must be exactly one of: 
+   - "Interested" (positive, enthusiastic, wants to see mockup, or asks questions but seems interested)
+   - "Maybe" (hesitant, wants to learn more, or okay to see a mockup first)
+   - "Question" (has specific queries/skeptical, e.g. asking about pricing, details, mobile-friendly setup)
+   - "Uninterested" (declines, says no, doesn't want it)
+2. "designPreferences": list any specific colors, layouts, branding keywords, or features requested in their email, or empty string.
+3. "summary": brief one-sentence explanation of why you classified it this way.
 
-Return ONLY a JSON object:
+Return your response in strict JSON format:
 {
-  "subject": "Re: ${outreachEmail.subject}",
-  "body": "..."
-}
-Do not return any markdown wrappers outside the raw JSON.`;
+  "temperament": "Interested" | "Maybe" | "Question" | "Uninterested",
+  "designPreferences": "...",
+  "summary": "..."
+}`;
 
-    let parsedReply: any;
+    let classification: any;
     try {
       const response = await ai.models.generateContent({
         model: "gemini-3.5-flash",
@@ -1769,31 +1536,45 @@ Do not return any markdown wrappers outside the raw JSON.`;
           responseMimeType: "application/json"
         }
       });
-
-      parsedReply = JSON.parse(response.text?.trim() || "{}");
+      classification = JSON.parse(response.text?.trim() || "{}");
     } catch (apiError: any) {
-      console.log("ℹ Simulation engine is busy, enacting local procedural behavioral templates.");
-      parsedReply = fallbackGenerateReply(lead, temperament);
+      console.error("Gemini classification failed, using simple heuristics:", apiError);
+      // Fallback heuristics based on real text contents
+      const lower = replyText.toLowerCase();
+      let temp: "Interested" | "Maybe" | "Question" | "Uninterested" = "Maybe";
+      if (lower.includes("no thanks") || lower.includes("not interested") || lower.includes("already have") || lower.includes("unsubscribe")) {
+        temp = "Uninterested";
+      } else if (lower.includes("sure") || lower.includes("yes") || lower.includes("please") || lower.includes("interested") || lower.includes("love to")) {
+        temp = "Interested";
+      } else if (lower.includes("how much") || lower.includes("cost") || lower.includes("price") || lower.includes("question") || lower.includes("why")) {
+        temp = "Question";
+      }
+      classification = {
+        temperament: temp,
+        designPreferences: "",
+        summary: "Heuristically classified client email response text."
+      };
     }
+
     const replyMessage = {
       id: `em_reply_${Date.now()}`,
-      subject: parsedReply.subject || `Re: Website Proposal`,
-      body: parsedReply.body || `Thanks for writing. I might be interested.`,
+      subject: `Re: ${outreachEmail.subject}`,
+      body: replyText,
       sentAt: new Date().toISOString(),
       type: "qualification" as const,
       sender: "client" as const
     };
 
     lead.emails = [replyMessage, ...lead.emails];
-    
+    const temperament = classification.temperament;
     const isPositive = temperament === "Interested" || temperament === "Maybe" || temperament === "Question";
-    
+
     if (isPositive) {
       lead.status = "replied_interested";
       lead.activities.unshift({
         id: `act_${lead.id}_reply_int`,
         timestamp: new Date().toISOString(),
-        message: `Received interested email reply from owner ${lead.ownerName} (${temperament}). Transitioning lead to Replied / Interested.`,
+        message: `Received reply from client. AI Analysis qualified lead as '${temperament}'. Reason: ${classification.summary}.`,
         type: "email_received"
       });
     } else {
@@ -1801,12 +1582,12 @@ Do not return any markdown wrappers outside the raw JSON.`;
       lead.activities.unshift({
         id: `act_${lead.id}_reply_un`,
         timestamp: new Date().toISOString(),
-        message: `Received polite rejection from owner ${lead.ownerName}. outreach campaign closed.`,
+        message: `Received reply from client. AI Analysis classified as Uninterested. Reason: ${classification.summary}. Outreach closed.`,
         type: "email_received"
       });
     }
 
-    // Capture the auto-build instruction and execute website generation in-place
+    // Auto-build is executed in-place if positive and requested
     if (isPositive && autoBuildWebsite) {
       lead.activities.unshift({
         id: `act_${lead.id}_auto_build_trigger`,
@@ -1815,9 +1596,9 @@ Do not return any markdown wrappers outside the raw JSON.`;
         type: "site_build"
       });
       try {
-        await generateWebsiteForLead(lead);
+        await generateWebsiteForLead(lead, classification.designPreferences);
       } catch (buildError: any) {
-        console.error("Auto website build failed, continuing with reply:", buildError);
+        console.error("Auto website build failed:", buildError);
         lead.activities.unshift({
           id: `act_${lead.id}_auto_build_fail`,
           timestamp: new Date().toISOString(),
@@ -1832,7 +1613,7 @@ Do not return any markdown wrappers outside the raw JSON.`;
 
     res.json({ success: true, lead });
   } catch (e: any) {
-    console.error("Reply simulation error:", e);
+    console.error("Reply recording error:", e);
     res.status(500).json({ error: e.message });
   }
 });

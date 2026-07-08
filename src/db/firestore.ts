@@ -144,91 +144,77 @@ function sanitizeData(obj: any): any {
 // CRUD: GET ALL LEADS
 export async function dbGetLeads(): Promise<any[]> {
   const { useFirestore: active } = await initFirestore();
-  if (active && db) {
-    try {
-      const snapshot = await fbGetDocs(collectionRef);
-      const list: any[] = [];
-      snapshot.forEach((docSnap: any) => {
-        list.push({ ...docSnap.data(), id: docSnap.id });
-      });
-      return list;
-    } catch (error) {
-      handleFirestoreError(error, OperationType.LIST, "leads");
-    }
+  if (!active || !db) {
+    throw new Error("Firestore database is not initialized. Please ensure firebase-applet-config.json is configured.");
   }
-  return readLocalLeads();
+  try {
+    const snapshot = await fbGetDocs(collectionRef);
+    const list: any[] = [];
+    snapshot.forEach((docSnap: any) => {
+      list.push({ ...docSnap.data(), id: docSnap.id });
+    });
+    return list;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.LIST, "leads");
+  }
 }
 
 // CRUD: SAVE SINGLE LEAD
 export async function dbSaveLead(lead: any): Promise<void> {
   const sanitized = sanitizeData(lead);
   const { useFirestore: active } = await initFirestore();
-  if (active && db) {
-    const docPath = `leads/${sanitized.id}`;
-    try {
-      const docRef = fbDoc(db, "leads", sanitized.id);
-      await fbSetDoc(docRef, sanitized);
-      return;
-    } catch (error) {
-      handleFirestoreError(error, OperationType.WRITE, docPath);
-    }
+  if (!active || !db) {
+    throw new Error("Firestore database is not initialized. Please ensure firebase-applet-config.json is configured.");
   }
-  
-  const leads = readLocalLeads();
-  const idx = leads.findIndex(l => l.id === sanitized.id);
-  if (idx === -1) {
-    leads.push(sanitized);
-  } else {
-    leads[idx] = sanitized;
+  const docPath = `leads/${sanitized.id}`;
+  try {
+    const docRef = fbDoc(db, "leads", sanitized.id);
+    await fbSetDoc(docRef, sanitized);
+    return;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, docPath);
   }
-  writeLocalLeads(leads);
 }
 
 // CRUD: SAVE MULTIPLE LEADS
 export async function dbSaveLeads(newLeads: any[]): Promise<void> {
   const sanitizedLeads = newLeads.map(l => sanitizeData(l));
   const { useFirestore: active } = await initFirestore();
-  if (active && db) {
-    try {
-      for (const lead of sanitizedLeads) {
-        const docRef = fbDoc(db, "leads", lead.id);
-        await fbSetDoc(docRef, lead);
-      }
-      return;
-    } catch (error) {
-      handleFirestoreError(error, OperationType.WRITE, "leads_batch");
-    }
+  if (!active || !db) {
+    throw new Error("Firestore database is not initialized. Please ensure firebase-applet-config.json is configured.");
   }
-  
-  const leads = readLocalLeads();
-  const existingIds = new Set(leads.map(l => l.id));
-  const merged = [...sanitizedLeads.filter(nl => !existingIds.has(nl.id)), ...leads];
-  writeLocalLeads(merged);
+  try {
+    for (const lead of sanitizedLeads) {
+      const docRef = fbDoc(db, "leads", lead.id);
+      await fbSetDoc(docRef, lead);
+    }
+    return;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, "leads_batch");
+  }
 }
 
 // CRUD: RESET DATABASE
 export async function dbResetLeads(defaultLeads: any[]): Promise<any[]> {
   const sanitizedDefaults = defaultLeads.map(l => sanitizeData(l));
   const { useFirestore: active } = await initFirestore();
-  if (active && db) {
-    try {
-      // Clear all existing documents in cloud Firestore
-      const snapshot = await fbGetDocs(collectionRef);
-      for (const docSnap of snapshot.docs) {
-        const docRef = fbDoc(db, "leads", docSnap.id);
-        await fbDeleteDoc(docRef);
-      }
-      // Populate defaults
-      for (const lead of sanitizedDefaults) {
-        const docRef = fbDoc(db, "leads", lead.id);
-        await fbSetDoc(docRef, lead);
-      }
-      return sanitizedDefaults;
-    } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, "leads_all");
-    }
+  if (!active || !db) {
+    throw new Error("Firestore database is not initialized. Please ensure firebase-applet-config.json is configured.");
   }
-  
-  writeLocalLeads(sanitizedDefaults);
-  return sanitizedDefaults;
+  try {
+    // Clear all existing documents in cloud Firestore
+    const snapshot = await fbGetDocs(collectionRef);
+    for (const docSnap of snapshot.docs) {
+      const docRef = fbDoc(db, "leads", docSnap.id);
+      await fbDeleteDoc(docRef);
+    }
+    // Populate defaults
+    for (const lead of sanitizedDefaults) {
+      const docRef = fbDoc(db, "leads", lead.id);
+      await fbSetDoc(docRef, lead);
+    }
+    return sanitizedDefaults;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, "leads_all");
+  }
 }

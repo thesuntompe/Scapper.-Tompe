@@ -160,32 +160,6 @@ This Agreement is entered into by Sterling Digital Agency and ${lead.businessNam
     });
   };
 
-  const handleSimulatePayment = () => {
-    if (!lead.invoice) return;
-    syncLeadChange({
-      invoice: {
-        ...lead.invoice,
-        status: "paid"
-      },
-      status: "paid_and_deployed",
-      activities: [
-        {
-          id: `act_pay_${Date.now()}`,
-          timestamp: new Date().toISOString(),
-          message: `Invoice #${lead.invoice.id} paid. Revenue of $${lead.invoice.amount.toLocaleString()} marked collected inside SaaS Agency CRM ledger.`,
-          type: "payment"
-        },
-        {
-          id: `act_dep_${Date.now()}`,
-          timestamp: new Date().toISOString(),
-          message: `Deploy authorization approved. Live servers routing custom domain '${lead.customDomain?.domainName || lead.businessName.toLowerCase().replace(/\s+/g, '') + ".com"}' to cloud containers.`,
-          type: "deploy"
-        },
-        ...lead.activities
-      ]
-    });
-  };
-
   return (
     <div className="space-y-6">
       
@@ -668,13 +642,11 @@ This Agreement is entered into by Sterling Digital Agency and ${lead.businessNam
                           Marked Paid
                         </span>
                       ) : (
-                        <div className="flex flex-col gap-1">
-                          <button
-                            onClick={handleSimulatePayment}
-                            className="text-[10px] font-sans font-bold bg-emerald-600 hover:bg-emerald-500 text-white py-1 px-3 rounded"
-                          >
-                            Simulate Payment
-                          </button>
+                        <div className="flex flex-col items-end">
+                          <span className="text-[9px] font-mono uppercase bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded font-bold animate-pulse">
+                            Awaiting Payment
+                          </span>
+                          <span className="text-[8px] text-slate-400 font-sans mt-0.5">Settle under "AI Web Workspace"</span>
                         </div>
                       )}
                     </div>
