@@ -158,7 +158,7 @@ export default function AIWebsiteWorkspaceTab({ lead, onUpdateLead }: AIWebsiteW
 
   const deploySteps = [
     "Initializing GitHub continuous deployment pipeline...",
-    "Creating secure repository sterling-agency/prod-deploy-server...",
+    "Creating secure repository singularity-ai/prod-deploy-server...",
     "Compiling and validating custom responsive Tailwind styles...",
     "Uploading visual media and optimizing image routing layers...",
     "Generating Cloudflare Pages edge routing configurations...",
@@ -395,9 +395,9 @@ export default function AIWebsiteWorkspaceTab({ lead, onUpdateLead }: AIWebsiteW
                                 <span>IBAN/SWIFT Wire Instructions</span>
                                 <span className="text-[9px] font-normal text-indigo-400">Copy to client</span>
                               </p>
-                              <p><span className="text-slate-500">Bank:</span> Sterling Commerce Vault</p>
+                              <p><span className="text-slate-500">Bank:</span> Singularity Commerce Vault</p>
                               <p><span className="text-slate-500">Routing:</span> 021000021</p>
-                              <p><span className="text-slate-500">IBAN:</span> US76 STRL 3209 8121 2101</p>
+                              <p><span className="text-slate-500">IBAN:</span> US76 SING 3209 8121 2101</p>
                               <p><span className="text-slate-500">Reference:</span> {lead.businessName.toUpperCase().replace(/\s+/g, "-")}</p>
                             </div>
 

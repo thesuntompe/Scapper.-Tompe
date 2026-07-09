@@ -50,15 +50,15 @@ export default function CommunicationCenterTab({ lead, onUpdateLead }: Communica
   const [replyingIG, setReplyingIG] = useState(false);
 
   // States
-  const [senderName, setSenderName] = useState(() => localStorage.getItem("sterling_sender_name") || "Alex Sterling / Sterling & Co. Digital Agency");
-  const [senderEmail, setSenderEmail] = useState(() => localStorage.getItem("sterling_sender_email") || "hackingm29@gmail.com");
+  const [senderName, setSenderName] = useState(() => localStorage.getItem("singularity_sender_name") || "Alex / Singularity AI Partner");
+  const [senderEmail, setSenderEmail] = useState(() => localStorage.getItem("singularity_sender_email") || "admin@singularityai.io");
   
   const [emailReplyText, setEmailReplyText] = useState("");
   const [whatsappReplyText, setWhatsappReplyText] = useState("");
   const [instagramReplyText, setInstagramReplyText] = useState("");
   
   const [autoBuild, setAutoBuild] = useState(() => {
-    const cached = localStorage.getItem("sterling_auto_build");
+    const cached = localStorage.getItem("singularity_auto_build");
     return cached !== "false"; // default true
   });
 

@@ -100,10 +100,10 @@ export default function LeadDossierTab({ lead, onUpdateLead }: LeadDossierTabPro
       contract: {
         terms: `TERMS OF DIGITAL AGENCY REDESIGN CONTRACT
 
-This Agreement is entered into by Sterling Digital Agency and ${lead.businessName} (represented by ${lead.ownerName}).
+This Agreement is entered into by Singularity AI and ${lead.businessName} (represented by ${lead.ownerName}).
 1. Scope: Custom Web Presence Design, HTTPS security setup, Google Review sync, mobile UI development.
-2. Financials: The Client agrees to pay the non-refundable sum of $${lead.proposal.price.toLocaleString()} USD.
-3. Deployment: Work will be simulated and previewed live on temporary sandboxes. Upon full billing approval, the domain DNS will route to active cloud host.`,
+2. Financials: The Client agrees to pay the sum of $${lead.proposal.price.toLocaleString()} USD.
+3. Deployment: Work will be deployed live on fast production gateways. Upon full billing approval, the domain DNS will route to the active custom host.`,
         signed: false
       },
       activities: [
