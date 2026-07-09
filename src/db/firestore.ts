@@ -70,7 +70,33 @@ export async function initFirestore() {
         const { getFirestore, doc, getDoc, getDocs, setDoc, deleteDoc, collection } = await import("firebase/firestore");
         
         const app = initializeApp(firebaseConfig);
-        const dbId = firebaseConfig.firestoreDatabaseId || "(default)";
+        
+        // Dynamically resolve custom database ID from firebase.json
+        let dbId = firebaseConfig.firestoreDatabaseId;
+        if (!dbId) {
+          try {
+            const firebaseJsonPath = path.join(process.cwd(), "firebase.json");
+            if (fs.existsSync(firebaseJsonPath)) {
+              const fbJsonRaw = fs.readFileSync(firebaseJsonPath, "utf-8");
+              const fbJson = JSON.parse(fbJsonRaw);
+              if (fbJson.firestore && Array.isArray(fbJson.firestore) && fbJson.firestore.length > 0) {
+                const customDb = fbJson.firestore.find((f: any) => f.database && f.database !== "(default)");
+                if (customDb) {
+                  dbId = customDb.database;
+                } else {
+                  dbId = fbJson.firestore[0].database;
+                }
+              }
+            }
+          } catch (jsonErr) {
+            console.error("Failed to parse firebase.json for database ID:", jsonErr);
+          }
+        }
+        if (!dbId) {
+          dbId = "(default)";
+        }
+
+        console.log(`Initializing Firestore with Database ID: ${dbId}`);
         db = getFirestore(app, dbId);
         
         fbDoc = doc;
@@ -145,7 +171,8 @@ function sanitizeData(obj: any): any {
 export async function dbGetLeads(): Promise<any[]> {
   const { useFirestore: active } = await initFirestore();
   if (!active || !db) {
-    throw new Error("Firestore database is not initialized. Please ensure firebase-applet-config.json is configured.");
+    console.log("Firestore not active. Falling back to local file leads database.");
+    return readLocalLeads();
   }
   try {
     const snapshot = await fbGetDocs(collectionRef);
@@ -164,7 +191,16 @@ export async function dbSaveLead(lead: any): Promise<void> {
   const sanitized = sanitizeData(lead);
   const { useFirestore: active } = await initFirestore();
   if (!active || !db) {
-    throw new Error("Firestore database is not initialized. Please ensure firebase-applet-config.json is configured.");
+    console.log("Firestore not active. Saving lead to local file database.");
+    const leads = readLocalLeads();
+    const idx = leads.findIndex(l => l.id === sanitized.id);
+    if (idx !== -1) {
+      leads[idx] = sanitized;
+    } else {
+      leads.push(sanitized);
+    }
+    writeLocalLeads(leads);
+    return;
   }
   const docPath = `leads/${sanitized.id}`;
   try {
@@ -181,7 +217,9 @@ export async function dbSaveLeads(newLeads: any[]): Promise<void> {
   const sanitizedLeads = newLeads.map(l => sanitizeData(l));
   const { useFirestore: active } = await initFirestore();
   if (!active || !db) {
-    throw new Error("Firestore database is not initialized. Please ensure firebase-applet-config.json is configured.");
+    console.log("Firestore not active. Saving batch leads to local file database.");
+    writeLocalLeads(sanitizedLeads);
+    return;
   }
   try {
     for (const lead of sanitizedLeads) {
@@ -199,7 +237,9 @@ export async function dbResetLeads(defaultLeads: any[]): Promise<any[]> {
   const sanitizedDefaults = defaultLeads.map(l => sanitizeData(l));
   const { useFirestore: active } = await initFirestore();
   if (!active || !db) {
-    throw new Error("Firestore database is not initialized. Please ensure firebase-applet-config.json is configured.");
+    console.log("Firestore not active. Resetting local file database.");
+    writeLocalLeads(sanitizedDefaults);
+    return sanitizedDefaults;
   }
   try {
     // Clear all existing documents in cloud Firestore

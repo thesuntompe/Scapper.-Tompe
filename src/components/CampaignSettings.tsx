@@ -10,20 +10,30 @@ const CATEGORY_SUGGESTIONS = [
   "Restaurants", "Cafes", "Plumbing", "Electricians", "HVAC Services", "Gyms", "Beauty Salons", "Dentists"
 ];
 
-const USA_CITIES = [
-  "Miami, FL", "Austin, TX", "Seattle, WA", "Denver, CO", "Chicago, IL", "Boston, MA", "Phoenix, AZ"
+const GLOBAL_SUGGESTIONS = [
+  { label: "Sydney, Australia", city: "Sydney", state: "NSW", country: "Australia" },
+  { label: "Hyderabad, India", city: "Hyderabad", state: "Telangana", country: "India" },
+  { label: "London, UK", city: "London", state: "Greater London", country: "United Kingdom" },
+  { label: "Dubai, UAE", city: "Dubai", state: "Dubai", country: "UAE" },
+  { label: "Toronto, Canada", city: "Toronto", state: "Ontario", country: "Canada" },
+  { label: "New York, USA", city: "New York", state: "NY", country: "USA" }
 ];
 
 export default function CampaignSettings({ onCampaignComplete }: CampaignSettingsProps) {
   const [category, setCategory] = useState("Cafes");
-  const [location, setLocation] = useState("Miami, FL");
+  const [country, setCountry] = useState("USA");
+  const [state, setState] = useState("FL");
+  const [city, setCity] = useState("Miami");
+  const [zipCode, setZipCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [logs, setLogs] = useState<string[]>([]);
 
+  const fullLocation = [city, state, country, zipCode].map(s => s.trim()).filter(Boolean).join(", ");
+
   const steps = [
     "Initializing Enterprise business search grounding...",
-    `Accessing Google Maps database for real '${category}' in '${location}'...`,
+    `Accessing Google Maps database for real '${category}' in '${fullLocation}'...`,
     "Evaluating target online presence: auditing mobile compliance, SSL security status, and review metrics...",
     "Running AI business research analysis: compiling history, services, and market competitor indexes...",
     "Computing Lead Priority Score based on quality deficit indicators...",
@@ -49,11 +59,11 @@ export default function CampaignSettings({ onCampaignComplete }: CampaignSetting
     }, 2800);
 
     return () => clearInterval(interval);
-  }, [loading, category, location]);
+  }, [loading, category, fullLocation]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!category.trim() || !location.trim()) return;
+    if (!category.trim() || !fullLocation.trim()) return;
 
     setLoading(true);
     setCurrentStep(0);
@@ -63,7 +73,7 @@ export default function CampaignSettings({ onCampaignComplete }: CampaignSetting
       const response = await fetch("/api/campaign/start", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ category, location }),
+        body: JSON.stringify({ category, location: fullLocation }),
       });
 
       if (!response.ok) {
@@ -131,34 +141,84 @@ export default function CampaignSettings({ onCampaignComplete }: CampaignSetting
               </div>
             </div>
 
-            <div>
-              <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-400 mb-1.5 font-bold">US Location</label>
-              <div className="relative">
-                <Compass className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
-                <input
-                  type="text"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-800 focus:outline-none focus:border-slate-800 font-sans"
-                  placeholder="City, State (e.g. Dallas, TX)"
-                  required
-                />
+            <div className="space-y-3">
+              <div className="flex items-center gap-1.5 text-slate-400">
+                <Compass size={14} className="text-slate-400 shrink-0" />
+                <span className="text-[10px] font-mono uppercase tracking-wider font-bold">Global Target Location</span>
               </div>
+              
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[9px] font-mono uppercase tracking-wider text-slate-400 mb-1 font-bold">Country</label>
+                  <input
+                    type="text"
+                    value={country}
+                    onChange={(e) => setCountry(e.target.value)}
+                    className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-800 focus:outline-none focus:border-slate-800 font-sans"
+                    placeholder="e.g. Australia"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[9px] font-mono uppercase tracking-wider text-slate-400 mb-1 font-bold">State / Region</label>
+                  <input
+                    type="text"
+                    value={state}
+                    onChange={(e) => setState(e.target.value)}
+                    className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-800 focus:outline-none focus:border-slate-800 font-sans"
+                    placeholder="e.g. NSW"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[9px] font-mono uppercase tracking-wider text-slate-400 mb-1 font-bold">City</label>
+                  <input
+                    type="text"
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-800 focus:outline-none focus:border-slate-800 font-sans"
+                    placeholder="e.g. Sydney"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[9px] font-mono uppercase tracking-wider text-slate-400 mb-1 font-bold">Postal Code (Optional)</label>
+                  <input
+                    type="text"
+                    value={zipCode}
+                    onChange={(e) => setZipCode(e.target.value)}
+                    className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-800 focus:outline-none focus:border-slate-800 font-sans"
+                    placeholder="e.g. 2000"
+                  />
+                </div>
+              </div>
+
+              {/* Global City Suggestions */}
               <div className="flex flex-wrap gap-1 mt-2">
-                {USA_CITIES.map((city) => (
-                  <button
-                    key={city}
-                    type="button"
-                    onClick={() => setLocation(city)}
-                    className={`text-[9px] font-mono px-2 py-0.5 rounded-full border transition-all ${
-                      location === city
-                        ? "bg-slate-900 border-slate-950 text-white font-bold"
-                        : "bg-slate-50 border-slate-200 text-slate-500 hover:border-slate-300"
-                    }`}
-                  >
-                    {city}
-                  </button>
-                ))}
+                {GLOBAL_SUGGESTIONS.map((item) => {
+                  const isActive = city.toLowerCase() === item.city.toLowerCase() && country.toLowerCase() === item.country.toLowerCase();
+                  return (
+                    <button
+                      key={item.label}
+                      type="button"
+                      onClick={() => {
+                        setCity(item.city);
+                        setState(item.state);
+                        setCountry(item.country);
+                        setZipCode("");
+                      }}
+                      className={`text-[9px] font-mono px-2 py-0.5 rounded-full border transition-all ${
+                        isActive
+                          ? "bg-indigo-600 border-indigo-700 text-white font-bold"
+                          : "bg-slate-50 border-slate-200 text-slate-500 hover:border-slate-300"
+                      }`}
+                    >
+                      {item.label}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>

@@ -150,6 +150,10 @@ export interface Lead {
   websiteUrl: string;
   category: string;
   location: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  postalCode?: string;
   googleRating: number;
   reviewCount: number;
   socialMedia: {
@@ -161,6 +165,7 @@ export interface Lead {
   onlinePresence: OnlinePresence;
   aiResearchSummary: AIResearchSummary;
   leadScore: number;
+  aiRecommendation?: string;
   status: 'discovered' | 'scored' | 'outreach_drafted' | 'emailed' | 'replied_interested' | 'replied_uninterested' | 'planning' | 'site_generated' | 'client_review' | 'paid_and_deployed' | 'followup_scheduled';
   emails: EmailMessage[];
   websitePlan: WebsitePlan;

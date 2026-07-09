@@ -24,6 +24,7 @@ import {
   Info
 } from "lucide-react";
 import { Lead, EmailMessage, WhatsAppMessage, InstagramMessage, InstagramProfile } from "../types";
+import { googleSignIn, getAccessToken } from "../lib/auth";
 
 interface CommunicationCenterTabProps {
   lead: Lead;
@@ -104,10 +105,29 @@ export default function CommunicationCenterTab({ lead, onUpdateLead }: Communica
   const handleSendEmail = async () => {
     setSendingEmail(true);
     try {
+      let token = await getAccessToken();
+      if (!token) {
+        // Prompt Google sign in
+        const res = await googleSignIn();
+        if (res) {
+          token = res.accessToken;
+        }
+      }
+
+      if (!token) {
+        throw new Error("Authentication with Google is required to send real emails.");
+      }
+
       const response = await fetch(`/api/leads/${lead.id}/mark-sent`, {
         method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        }
       });
-      if (!response.ok) throw new Error("Failed to record email as sent");
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.error || "Failed to transmit outreach email");
+      }
       const data = await response.json();
       onUpdateLead(data.lead);
     } catch (e: any) {
@@ -637,7 +657,7 @@ export default function CommunicationCenterTab({ lead, onUpdateLead }: Communica
                     className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold font-sans flex items-center justify-center gap-2 transition-all cursor-pointer"
                   >
                     {sendingEmail ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
-                    <span>Approve & Record Sent</span>
+                    <span>Approve & Send via Gmail</span>
                   </button>
                 </div>
               )}
@@ -667,17 +687,6 @@ export default function CommunicationCenterTab({ lead, onUpdateLead }: Communica
                       {draftingEmail ? "Processing Reply..." : "Record & AI-Analyze Reply"}
                     </button>
                   </div>
-
-                  {/* Sample email templates helper */}
-                  <div className="pt-2 border-t border-slate-900 space-y-1">
-                    <span className="text-[9px] font-mono uppercase text-slate-500 block font-bold">Quick Sample Replies</span>
-                    <button
-                      onClick={() => setEmailReplyText("Hi, thanks for reaching out. Yes, we would actually love to see a free website mockup. Carlos.")}
-                      className="text-left text-[9px] font-sans text-slate-400 hover:text-white p-1.5 bg-slate-900 rounded border border-slate-800 hover:border-slate-700 w-full transition-all"
-                    >
-                      👍 carlos: "Would love to see a free website mockup..."
-                    </button>
-                  </div>
                 </div>
               )}
 
@@ -701,7 +710,7 @@ export default function CommunicationCenterTab({ lead, onUpdateLead }: Communica
                 <span>WhatsApp Cloud API Workflow</span>
               </h3>
 
-              {/* Status workflow indicators: Found -> Researched -> Approved -> Sent -> Delivered -> Read -> Replied -> Meeting Scheduled */}
+              {/* Status workflow indicators: Found -> Researched -> Approved -> Sent -> Replied */}
               <div className="space-y-2 border-b border-slate-900 pb-4">
                 <span className="text-[9px] font-mono uppercase text-slate-500 block font-bold">API pipeline node</span>
                 <div className="flex flex-col gap-1 text-[9px] font-mono font-semibold">
@@ -713,29 +722,17 @@ export default function CommunicationCenterTab({ lead, onUpdateLead }: Communica
                     <CheckCircle2 size={10} className="text-emerald-500" />
                     <span>Public Gaps Researched</span>
                   </div>
-                  <div className={`flex items-center gap-1.5 ${["approved", "sent", "delivered", "read", "replied", "meeting_scheduled"].includes(waLatestStatus) ? "text-emerald-400" : "text-slate-600"}`}>
-                    <CheckCircle2 size={10} className={["approved", "sent", "delivered", "read", "replied", "meeting_scheduled"].includes(waLatestStatus) ? "text-emerald-500" : "text-slate-800"} />
+                  <div className={`flex items-center gap-1.5 ${["approved", "sent", "replied"].includes(waLatestStatus) ? "text-emerald-400" : "text-slate-600"}`}>
+                    <CheckCircle2 size={10} className={["approved", "sent", "replied"].includes(waLatestStatus) ? "text-emerald-500" : "text-slate-800"} />
                     <span>Human Approval Verified</span>
                   </div>
-                  <div className={`flex items-center gap-1.5 ${["sent", "delivered", "read", "replied", "meeting_scheduled"].includes(waLatestStatus) ? "text-emerald-400" : "text-slate-600"}`}>
-                    <CheckCircle2 size={10} className={["sent", "delivered", "read", "replied", "meeting_scheduled"].includes(waLatestStatus) ? "text-emerald-500" : "text-slate-800"} />
+                  <div className={`flex items-center gap-1.5 ${["sent", "replied"].includes(waLatestStatus) ? "text-emerald-400" : "text-slate-600"}`}>
+                    <CheckCircle2 size={10} className={["sent", "replied"].includes(waLatestStatus) ? "text-emerald-500" : "text-slate-800"} />
                     <span>WhatsApp Transmitted (Sent)</span>
                   </div>
-                  <div className={`flex items-center gap-1.5 ${["delivered", "read", "replied", "meeting_scheduled"].includes(waLatestStatus) ? "text-emerald-400" : "text-slate-600"}`}>
-                    <CheckCircle2 size={10} className={["delivered", "read", "replied", "meeting_scheduled"].includes(waLatestStatus) ? "text-emerald-500" : "text-slate-800"} />
-                    <span>Cloud API Delivered Receipt</span>
-                  </div>
-                  <div className={`flex items-center gap-1.5 ${["read", "replied", "meeting_scheduled"].includes(waLatestStatus) ? "text-emerald-400" : "text-slate-600"}`}>
-                    <CheckCircle2 size={10} className={["read", "replied", "meeting_scheduled"].includes(waLatestStatus) ? "text-emerald-500" : "text-slate-800"} />
-                    <span>Incoming Read Receipt (Blue)</span>
-                  </div>
-                  <div className={`flex items-center gap-1.5 ${["replied", "meeting_scheduled"].includes(waLatestStatus) ? "text-emerald-400" : "text-slate-600"}`}>
-                    <CheckCircle2 size={10} className={["replied", "meeting_scheduled"].includes(waLatestStatus) ? "text-emerald-500" : "text-slate-800"} />
+                  <div className={`flex items-center gap-1.5 ${["replied"].includes(waLatestStatus) ? "text-emerald-400" : "text-slate-600"}`}>
+                    <CheckCircle2 size={10} className={["replied"].includes(waLatestStatus) ? "text-emerald-500" : "text-slate-800"} />
                     <span>Prospect Replied (Intent)</span>
-                  </div>
-                  <div className={`flex items-center gap-1.5 ${waLatestStatus === "meeting_scheduled" ? "text-indigo-400 font-bold" : "text-slate-600"}`}>
-                    <CheckCircle2 size={10} className={waLatestStatus === "meeting_scheduled" ? "text-indigo-500" : "text-slate-800"} />
-                    <span>📅 Meeting Scheduled</span>
                   </div>
                 </div>
               </div>
@@ -1113,8 +1110,7 @@ export default function CommunicationCenterTab({ lead, onUpdateLead }: Communica
                                 {msg.status === "draft" && <Clock size={8} className="text-slate-500" />}
                                 {msg.status === "approved" && <Check size={8} className="text-slate-400" />}
                                 {msg.status === "sent" && <Check size={8} className="text-slate-200" />}
-                                {msg.status === "delivered" && <CheckCheck size={8} className="text-slate-400" />}
-                                {["read", "replied", "meeting_scheduled"].includes(msg.status) && <CheckCheck size={8} className="text-cyan-400" />}
+                                {msg.status === "replied" && <CheckCheck size={8} className="text-cyan-400" />}
                               </span>
                             )}
                           </div>
