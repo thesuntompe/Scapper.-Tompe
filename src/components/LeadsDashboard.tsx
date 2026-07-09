@@ -267,7 +267,7 @@ export default function LeadsDashboard({
       <div className="px-6 py-5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-white">
         <div>
           <h2 className="text-md font-bold text-slate-800 font-sans tracking-tight">AI CRM Lead Pipeline</h2>
-          <p className="text-[10px] text-slate-400 font-mono">STEP 4: QUALIFIED ACQUISITION SELECTION</p>
+          <p className="text-[10px] text-slate-400 font-mono">QUALIFIED ACQUISITION SELECTION</p>
         </div>
         
         <div className="flex flex-wrap items-center gap-2">
@@ -466,9 +466,8 @@ export default function LeadsDashboard({
                 {filteredLeads.map((lead) => {
                   const isSelected = selectedLeadId === lead.id;
                   const isHighPriority = lead.leadScore >= 70;
-                  const igUsername = lead.instagramProfile?.username || lead.socialMedia?.instagram || "";
-                  const igUrl = igUsername ? (igUsername.startsWith("http") ? igUsername : `https://instagram.com/${igUsername.replace("@", "")}`) : "";
-                  const cleanPhone = lead.phone?.replace(/\D/g, "");
+                  const igUrl = lead.contactInfo?.instagram_url || (lead.socialMedia?.instagram ? (lead.socialMedia.instagram.startsWith("http") ? lead.socialMedia.instagram : `https://instagram.com/${lead.socialMedia.instagram.replace(/^@/, "")}`) : "");
+                  const cleanPhone = (lead.contactInfo?.phone_number || lead.phone || "").replace(/\D/g, "");
                   const waUrl = cleanPhone ? `https://wa.me/${cleanPhone}` : "";
 
                   return (

@@ -27,6 +27,16 @@ export default function LeadDossierTab({ lead, onUpdateLead }: LeadDossierTabPro
 
   const isHighPriority = lead.leadScore >= 70;
 
+  const contactPhone = lead.contactInfo?.phone_number || lead.phone || "";
+  const contactEmail = lead.contactInfo?.email || lead.email || "";
+  const contactInstagram = lead.contactInfo?.instagram_url || lead.socialMedia?.instagram || "";
+  const contactFacebook = lead.contactInfo?.facebook_url || lead.socialMedia?.facebook || "";
+  const contactLinkedin = lead.contactInfo?.linkedin_url || lead.socialMedia?.linkedin || "";
+  const contactWebsite = lead.contactInfo?.website || lead.websiteUrl || "";
+  const contactBusinessName = lead.contactInfo?.business_name || lead.businessName || "";
+
+  const hasContactInfo = !!(contactPhone || contactEmail || contactInstagram || contactFacebook || contactLinkedin || contactWebsite);
+
   // Sync state changes with server
   const syncLeadChange = async (updates: Partial<Lead>) => {
     try {

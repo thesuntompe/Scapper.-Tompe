@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { 
-  CheckSquare, Clock, FileText, CreditCard, Ship, Activity, 
-  ArrowRight, ShieldAlert, Sparkles, TrendingUp, Users, DollarSign, ExternalLink
+  Users, CheckSquare, Clock, ShieldAlert, Sparkles, DollarSign, 
+  TrendingUp, Activity, ArrowRight, Play, Eye, Layers, Percent
 } from "lucide-react";
 import { Lead } from "../types";
 
@@ -13,100 +13,101 @@ interface DashboardViewProps {
 
 export default function DashboardView({ leads, onFocusLead, onNavigateSection }: DashboardViewProps) {
   
-  // 1. Compute dynamic metrics
+  // 1. Dynamic metric derivations
   const stats = useMemo(() => {
-    const total = leads.length;
-    const highPriority = leads.filter(l => l.leadScore >= 70).length;
-    const paidLeads = leads.filter(l => l.invoice?.status === "paid");
-    const totalRevenue = paidLeads.reduce((acc, l) => acc + (l.invoice?.amount || 0), 0);
-    const sitesBuilt = leads.filter(l => l.generatedWebsite?.htmlCode).length;
+    // New Leads
+    const newLeads = leads.filter(l => l.status === "discovered" || l.status === "scored").length;
+    
+    // Active Clients (those engaged in outreach or projects)
+    const activeClients = leads.filter(
+      l => l.status !== "discovered" && l.status !== "scored" && l.status !== "replied_uninterested"
+    ).length;
 
-    return { total, highPriority, totalRevenue, sitesBuilt };
+    // Pending Followups
+    const pendingFollowups = leads.filter(
+      l => l.followupAutomation?.enabled || l.status === "followup_scheduled"
+    ).length;
+
+    // Websites Live
+    const websitesLive = leads.filter(l => l.status === "paid_and_deployed" || l.generatedWebsite?.htmlCode).length;
+
+    // Pipeline Value
+    const pipelineValue = leads.reduce((acc, l) => acc + (l.proposal?.price || 1500), 0);
+
+    // Monthly Revenue Goal
+    const closedRevenue = leads
+      .filter(l => l.invoice?.status === "paid")
+      .reduce((acc, l) => acc + (l.invoice?.amount || 0), 0);
+    const monthlyGoal = 25000;
+    const goalPercent = Math.min(Math.round((closedRevenue / monthlyGoal) * 100), 100);
+
+    return {
+      newLeads,
+      activeClients,
+      pendingFollowups,
+      websitesLive,
+      pipelineValue,
+      closedRevenue,
+      monthlyGoal,
+      goalPercent
+    };
   }, [leads]);
 
-  // 2. Generate Today's Tasks dynamically based on real Lead states
+  // 2. Today's Focus Tasks
   const tasks = useMemo(() => {
-    const taskList: { id: string; text: string; leadId: string; type: "audit" | "outreach" | "design" | "billing"; leadName: string }[] = [];
-    
+    const list: { id: string; text: string; leadId: string; type: "audit" | "outreach" | "design" | "billing"; leadName: string }[] = [];
     leads.forEach((l) => {
       if (l.status === "discovered") {
-        taskList.push({
+        list.push({
           id: `task-audit-${l.id}`,
           text: `Audit online presence deficits for ${l.businessName}`,
           leadId: l.id,
           type: "audit",
           leadName: l.businessName
         });
-      }
-      if (l.status === "scored" || l.status === "followup_scheduled") {
-        taskList.push({
+      } else if (l.status === "scored" || l.status === "followup_scheduled") {
+        list.push({
           id: `task-outreach-${l.id}`,
-          text: `Draft high-converting email campaign for ${l.businessName}`,
+          text: `Configure outreach drip campaign for ${l.businessName}`,
           leadId: l.id,
           type: "outreach",
           leadName: l.businessName
         });
-      }
-      if (l.status === "outreach_drafted") {
-        taskList.push({
-          id: `task-send-${l.id}`,
-          text: `Send customized proposal deck to ${l.ownerName}`,
-          leadId: l.id,
-          type: "outreach",
-          leadName: l.businessName
-        });
-      }
-      if (l.status === "replied_interested" && !l.generatedWebsite?.htmlCode) {
-        taskList.push({
+      } else if (l.status === "replied_interested" && !l.generatedWebsite?.htmlCode) {
+        list.push({
           id: `task-design-${l.id}`,
-          text: `Design high-fidelity Tailwind mockup for ${l.businessName}`,
+          text: `Generate instant custom Tailwind build for ${l.businessName}`,
           leadId: l.id,
           type: "design",
           leadName: l.businessName
         });
-      }
-      if (l.invoice && l.invoice.status === "pending") {
-        taskList.push({
+      } else if (l.invoice && l.invoice.status === "pending") {
+        list.push({
           id: `task-bill-${l.id}`,
-          text: `Collect UPI / Bank Wire settlement of $${l.invoice.amount} for ${l.businessName}`,
+          text: `Record payment settlement of $${l.invoice.amount} for ${l.businessName}`,
           leadId: l.id,
           type: "billing",
           leadName: l.businessName
         });
       }
     });
-
-    return taskList.slice(0, 5); // Limit to top 5
+    return list.slice(0, 4); // Compact: limit to top 4 tasks
   }, [leads]);
 
-  // 3. Pending Follow Ups
-  const pendingFollowups = useMemo(() => {
-    return leads.filter((l) => l.followupAutomation?.enabled || l.status === "followup_scheduled");
+  // 3. Upcoming Followups
+  const upcomingFollowups = useMemo(() => {
+    return leads
+      .filter(l => l.followupAutomation?.enabled || l.status === "followup_scheduled")
+      .slice(0, 4);
   }, [leads]);
 
-  // 4. Clients Waiting For Proposal
-  const waitingForProposal = useMemo(() => {
-    return leads.filter((l) => !l.proposal && (l.status === "discovered" || l.status === "scored" || l.status === "replied_interested"));
-  }, [leads]);
-
-  // 5. Payments Pending
-  const paymentsPending = useMemo(() => {
-    return leads.filter((l) => l.invoice && l.invoice.status === "pending");
-  }, [leads]);
-
-  // 6. Deployments Pending
-  const deploymentsPending = useMemo(() => {
-    return leads.filter((l) => l.generatedWebsite?.htmlCode && l.status !== "paid_and_deployed");
-  }, [leads]);
-
-  // 7. Recent Activity feed aggregated from ALL leads
+  // 4. Recent Activity Logs
   const recentActivities = useMemo(() => {
-    const allLogs: { leadId: string; leadName: string; message: string; timestamp: string; type: string }[] = [];
-    
+    const logs: { leadId: string; leadName: string; message: string; timestamp: string; type: string }[] = [];
     leads.forEach((l) => {
       if (l.activities) {
         l.activities.forEach((act) => {
-          allLogs.push({
+          logs.push({
             leadId: l.id,
             leadName: l.businessName,
             message: act.message,
@@ -116,298 +117,267 @@ export default function DashboardView({ leads, onFocusLead, onNavigateSection }:
         });
       }
     });
+    // Sort newest first, keep compact (top 4)
+    return logs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 4);
+  }, [leads]);
 
-    // Sort by chronological order (newest first)
-    return allLogs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 8);
+  // 5. Funnel counts
+  const funnel = useMemo(() => {
+    const total = leads.length || 1; // avoid divide by zero
+    const newLeads = leads.filter(l => l.status === "discovered" || l.status === "scored").length;
+    const contacted = leads.filter(l => l.status === "outreach_drafted" || l.status === "emailed" || l.status === "followup_scheduled").length;
+    const interested = leads.filter(l => l.status === "replied_interested" || l.status === "planning").length;
+    const converted = leads.filter(l => l.status === "site_generated" || l.status === "client_review" || l.status === "paid_and_deployed").length;
+
+    return [
+      { label: "1. Discovered", count: newLeads, pct: Math.round((newLeads / total) * 100), color: "bg-[#7C3AED]" },
+      { label: "2. Contacted", count: contacted, pct: Math.round((contacted / total) * 100), color: "bg-[#8B5CF6]" },
+      { label: "3. Interested", count: interested, pct: Math.round((interested / total) * 100), color: "bg-[#A855F7]" },
+      { label: "4. Signed / Live", count: converted, pct: Math.round((converted / total) * 100), color: "bg-[#EC4899]" }
+    ];
   }, [leads]);
 
   return (
-    <div className="space-y-6 animate-fadeIn pb-12">
-      {/* Overview stats ribbon (Linear/Stripe style) */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+    <div className="space-y-4 animate-fadeIn pb-6 text-[#F8FAFC]">
+      
+      {/* Header section with reduced height (40% shorter) */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1 pb-1.5 border-b border-[#1F2937]">
+        <div>
+          <h2 className="text-sm font-extrabold text-white font-sans tracking-tight leading-none">Command Center</h2>
+          <p className="text-[9px] text-slate-400 font-mono mt-0.5">REAL-TIME REVENUE METRICS & AGENT STATUS</p>
+        </div>
+        <div className="text-[10px] bg-[#111827]/80 border border-[#1F2937] text-slate-300 font-mono px-2 py-0.5 rounded-md flex items-center gap-1.5 shadow-sm">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#A855F7] animate-pulse" />
+          Queue: {leads.length} Target Accounts
+        </div>
+      </div>
+
+      {/* Compact Grid Layout for Metric Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+        {/* ROW 1: New Leads & Active Clients */}
+        <div className="bg-[#111827]/60 backdrop-blur-md border border-[#1F2937] hover:border-[#7C3AED]/40 transition-all rounded-xl p-3 shadow-md flex flex-col justify-between h-[85px]">
           <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-semibold font-sans">Active Pipeline Size</span>
-            <Users size={16} className="text-slate-500" />
+            <span className="text-[10px] font-mono tracking-wider uppercase font-bold text-slate-400">New Leads</span>
+            <Users size={14} className="text-[#A855F7]" />
           </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-extrabold text-slate-900 tracking-tight">{stats.total}</span>
-            <span className="text-xs text-emerald-600 font-bold font-sans">leads index</span>
+          <div>
+            <div className="text-xl font-black text-white leading-none font-mono">{stats.newLeads}</div>
+            <span className="text-[8px] font-mono text-slate-500 block mt-0.5">Pending Scans / Score</span>
           </div>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+        <div className="bg-[#111827]/60 backdrop-blur-md border border-[#1F2937] hover:border-[#7C3AED]/40 transition-all rounded-xl p-3 shadow-md flex flex-col justify-between h-[85px]">
           <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-semibold font-sans">High Deficit Targets</span>
-            <ShieldAlert size={16} className="text-amber-500" />
+            <span className="text-[10px] font-mono tracking-wider uppercase font-bold text-slate-400">Active Clients</span>
+            <Layers size={14} className="text-emerald-500" />
           </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-extrabold text-slate-900 tracking-tight">{stats.highPriority}</span>
-            <span className="text-xs text-amber-600 font-mono">Score &ge; 70</span>
+          <div>
+            <div className="text-xl font-black text-white leading-none font-mono">{stats.activeClients}</div>
+            <span className="text-[8px] font-mono text-emerald-500 block mt-0.5">Engaged In Funnel</span>
           </div>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+        {/* ROW 2: Pending Followups & Websites Live */}
+        <div className="bg-[#111827]/60 backdrop-blur-md border border-[#1F2937] hover:border-[#7C3AED]/40 transition-all rounded-xl p-3 shadow-md flex flex-col justify-between h-[85px]">
           <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-semibold font-sans">Redesign Demos Built</span>
-            <Sparkles size={16} className="text-indigo-500" />
+            <span className="text-[10px] font-mono tracking-wider uppercase font-bold text-slate-400">Pending Followups</span>
+            <Clock size={14} className="text-amber-500" />
           </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-extrabold text-slate-900 tracking-tight">{stats.sitesBuilt}</span>
-            <span className="text-xs text-indigo-600 font-sans">mockups live</span>
+          <div>
+            <div className="text-xl font-black text-white leading-none font-mono">{stats.pendingFollowups}</div>
+            <span className="text-[8px] font-mono text-slate-500 block mt-0.5">Campaigns Active</span>
           </div>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+        <div className="bg-[#111827]/60 backdrop-blur-md border border-[#1F2937] hover:border-[#7C3AED]/40 transition-all rounded-xl p-3 shadow-md flex flex-col justify-between h-[85px]">
           <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-semibold font-sans">Settled Revenue</span>
-            <DollarSign size={16} className="text-emerald-500" />
+            <span className="text-[10px] font-mono tracking-wider uppercase font-bold text-slate-400">Websites Live</span>
+            <Sparkles size={14} className="text-indigo-400" />
           </div>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-extrabold text-slate-900 tracking-tight">${stats.totalRevenue.toLocaleString()}</span>
-            <span className="text-xs text-emerald-600 font-mono">USD Net</span>
+          <div>
+            <div className="text-xl font-black text-white leading-none font-mono">{stats.websitesLive}</div>
+            <span className="text-[8px] font-mono text-indigo-400 block mt-0.5">Tailwind Pages Generated</span>
+          </div>
+        </div>
+
+        {/* ROW 3: Pipeline Value & Monthly Revenue Goal */}
+        <div className="bg-[#111827]/60 backdrop-blur-md border border-[#1F2937] hover:border-[#7C3AED]/40 transition-all rounded-xl p-3 shadow-md flex flex-col justify-between h-[85px]">
+          <div className="flex items-center justify-between text-slate-400">
+            <span className="text-[10px] font-mono tracking-wider uppercase font-bold text-slate-400">Pipeline Value</span>
+            <DollarSign size={14} className="text-[#7C3AED]" />
+          </div>
+          <div>
+            <div className="text-xl font-black text-white leading-none font-mono">${stats.pipelineValue.toLocaleString()}</div>
+            <span className="text-[8px] font-mono text-slate-500 block mt-0.5">Drafted Proposals sum</span>
+          </div>
+        </div>
+
+        <div className="bg-[#111827]/60 backdrop-blur-md border border-[#1F2937] hover:border-[#7C3AED]/40 transition-all rounded-xl p-3 shadow-md flex flex-col justify-between h-[85px]">
+          <div className="flex items-center justify-between text-slate-400">
+            <span className="text-[10px] font-mono tracking-wider uppercase font-bold text-slate-400">Revenue Goal</span>
+            <TrendingUp size={14} className="text-pink-500" />
+          </div>
+          <div>
+            <div className="text-xl font-black text-white leading-none font-mono">{stats.goalPercent}%</div>
+            <span className="text-[8px] font-mono text-pink-400 block mt-0.5">${stats.closedRevenue.toLocaleString()} of $25K</span>
           </div>
         </div>
       </div>
 
-      {/* Main Grid: Left column (Tasks, Follow-ups, Proposals) + Right column (Payments, Deployments, Activity) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      {/* Panels Layout (Side-by-side in responsive grid) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pt-1">
         
-        {/* Left Column (7 Columns) */}
-        <div className="lg:col-span-7 space-y-6">
-          
-          {/* SECTION 1: TODAY'S TASKS */}
-          <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-200 bg-slate-50/50 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <CheckSquare className="text-indigo-600" size={16} />
-                <h3 className="text-sm font-bold text-slate-800 tracking-tight">Today's Focus Tasks</h3>
-              </div>
-              <span className="text-[10px] font-mono text-slate-400 bg-white px-2 py-0.5 rounded border border-slate-200 font-bold uppercase">
-                Action items ({tasks.length})
-              </span>
+        {/* Panel 1: Today's Tasks */}
+        <div className="bg-[#111827]/60 backdrop-blur-md border border-[#1F2937] rounded-xl overflow-hidden shadow-lg flex flex-col justify-between min-h-[220px]">
+          <div className="px-4 py-2 bg-[#111827] border-b border-[#1F2937] flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <CheckSquare size={13} className="text-[#7C3AED]" />
+              <span className="text-xs font-bold text-white font-sans">Today's Focus Tasks</span>
             </div>
-
-            <div className="divide-y divide-slate-100">
-              {tasks.length === 0 ? (
-                <div className="p-8 text-center text-slate-400 text-xs">
-                  All caught up! Discover new leads in the <button onClick={() => onNavigateSection("discovery")} className="text-indigo-600 font-bold hover:underline">Discovery Wizard</button>.
-                </div>
-              ) : (
-                tasks.map((task) => (
-                  <div key={task.id} className="p-4 flex items-center justify-between hover:bg-slate-50/40 transition-colors group">
-                    <div className="flex items-start gap-3">
-                      <div className={`mt-0.5 w-4 h-4 rounded border flex items-center justify-center shrink-0 border-slate-300 group-hover:border-indigo-500 transition-colors`}>
-                        <span className="w-2 h-2 rounded-sm bg-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </div>
-                      <div>
-                        <p className="text-xs text-slate-800 font-medium leading-normal">{task.text}</p>
-                        <span className="text-[9px] font-mono text-slate-400 uppercase mt-0.5 block">{task.type} • Client: {task.leadName}</span>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => onFocusLead(task.leadId, task.type === "billing" || task.type === "design" ? "website" : task.type === "outreach" ? "outreach" : "dossier")}
-                      className="text-xs text-indigo-600 hover:text-indigo-800 font-bold flex items-center gap-0.5 cursor-pointer"
-                    >
-                      Process <ArrowRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
-                    </button>
-                  </div>
-                ))
-              )}
-            </div>
+            <span className="text-[8px] font-mono text-slate-400 uppercase tracking-wider">
+              {tasks.length} items
+            </span>
           </div>
 
-          {/* SECTION 2: PENDING FOLLOW UPS */}
-          <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-200 bg-slate-50/50 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Clock className="text-amber-500" size={16} />
-                <h3 className="text-sm font-bold text-slate-800 tracking-tight">Active Follow-up Workflows</h3>
+          <div className="divide-y divide-[#1F2937] flex-1">
+            {tasks.length === 0 ? (
+              <div className="p-6 text-center text-slate-500 text-xs flex flex-col items-center justify-center h-full">
+                All caught up! Discover new leads inside the Discovery Wizard.
               </div>
-              <span className="text-[10px] font-mono text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-100 font-bold uppercase">
-                {pendingFollowups.length} scheduled
-              </span>
-            </div>
-
-            <div className="divide-y divide-slate-100">
-              {pendingFollowups.length === 0 ? (
-                <div className="p-8 text-center text-slate-400 text-xs">
-                  No scheduled follow-up campaigns active. Turn on automation in any client's CRM dossier tab.
-                </div>
-              ) : (
-                pendingFollowups.map((lead) => (
-                  <div key={lead.id} className="p-4 flex items-center justify-between hover:bg-slate-50/40 transition-colors">
-                    <div>
-                      <p className="text-xs font-bold text-slate-800">{lead.businessName}</p>
-                      <p className="text-[10px] text-slate-400 font-sans mt-0.5">
-                        Owner: {lead.ownerName || "Unavailable"} • Channel: {lead.email ? "Direct Email" : "Direct Link"}
-                      </p>
+            ) : (
+              tasks.map((task) => (
+                <div key={task.id} className="p-3 flex items-center justify-between hover:bg-[#1F2937]/30 transition-colors group">
+                  <div className="flex items-start gap-2 max-w-[80%]">
+                    <div className="mt-0.5 w-3.5 h-3.5 rounded border border-[#1F2937] group-hover:border-[#7C3AED] flex items-center justify-center shrink-0">
+                      <span className="w-1.5 h-1.5 rounded-sm bg-[#7C3AED] opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-[10px] font-mono bg-indigo-50 border border-indigo-100 text-indigo-600 py-0.5 px-2 rounded-full font-bold">
-                        AUTO-DRIP ACTIVE
-                      </span>
-                      <button
-                        onClick={() => onFocusLead(lead.id, "dossier")}
-                        className="text-xs text-slate-500 hover:text-slate-800 font-bold cursor-pointer"
-                      >
-                        Manage
-                      </button>
+                    <div>
+                      <p className="text-xs font-medium text-slate-200 line-clamp-1">{task.text}</p>
+                      <span className="text-[8px] font-mono text-slate-500 uppercase mt-0.5 block">{task.type} • Client: {task.leadName}</span>
                     </div>
                   </div>
-                ))
-              )}
+                  <button
+                    onClick={() => onFocusLead(task.leadId, task.type === "billing" || task.type === "design" ? "website" : task.type === "outreach" ? "outreach" : "dossier")}
+                    className="text-[10px] text-[#A855F7] hover:text-[#7C3AED] font-bold font-mono uppercase tracking-wider flex items-center gap-0.5 cursor-pointer"
+                  >
+                    Run <ArrowRight size={10} className="group-hover:translate-x-0.5 transition-transform" />
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Panel 2: Upcoming Followups */}
+        <div className="bg-[#111827]/60 backdrop-blur-md border border-[#1F2937] rounded-xl overflow-hidden shadow-lg flex flex-col justify-between min-h-[220px]">
+          <div className="px-4 py-2 bg-[#111827] border-b border-[#1F2937] flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <Clock size={13} className="text-amber-500" />
+              <span className="text-xs font-bold text-white font-sans">Upcoming Followups</span>
             </div>
+            <span className="text-[8px] font-mono text-amber-500 font-bold uppercase">
+              {upcomingFollowups.length} scheduled
+            </span>
           </div>
 
-          {/* SECTION 3: CLIENTS WAITING FOR PROPOSAL */}
-          <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-200 bg-slate-50/50 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <FileText className="text-blue-500" size={16} />
-                <h3 className="text-sm font-bold text-slate-800 tracking-tight">Awaiting Proposal Generation</h3>
+          <div className="divide-y divide-[#1F2937] flex-1">
+            {upcomingFollowups.length === 0 ? (
+              <div className="p-6 text-center text-slate-500 text-xs flex flex-col items-center justify-center h-full">
+                No active followups or auto-drips active.
               </div>
-              <span className="text-[10px] font-mono text-slate-400 bg-white px-2 py-0.5 rounded border border-slate-200 font-bold uppercase">
-                {waitingForProposal.length} prospects
-              </span>
-            </div>
-
-            <div className="divide-y divide-slate-100">
-              {waitingForProposal.length === 0 ? (
-                <div className="p-8 text-center text-slate-400 text-xs">
-                  No active clients waiting for pricing proposals.
-                </div>
-              ) : (
-                waitingForProposal.map((lead) => (
-                  <div key={lead.id} className="p-4 flex items-center justify-between hover:bg-slate-50/40 transition-colors">
-                    <div>
-                      <p className="text-xs font-bold text-slate-800">{lead.businessName}</p>
-                      <p className="text-[10px] text-slate-400 font-sans">HQ: {lead.location} • Lead Score: {lead.leadScore}/100</p>
-                    </div>
+            ) : (
+              upcomingFollowups.map((lead) => (
+                <div key={lead.id} className="p-3 flex items-center justify-between hover:bg-[#1F2937]/30 transition-colors">
+                  <div>
+                    <p className="text-xs font-bold text-slate-200 leading-tight">{lead.businessName}</p>
+                    <p className="text-[9px] text-slate-500 font-sans mt-0.5">
+                      {lead.ownerName || "Unknown Owner"} • Lead Score: {lead.leadScore}/100
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[8px] font-mono bg-[#7C3AED]/20 border border-[#7C3AED]/30 text-[#A855F7] py-0.5 px-2 rounded-full font-bold">
+                      DRIP ACTIVE
+                    </span>
                     <button
                       onClick={() => onFocusLead(lead.id, "dossier")}
-                      className="text-xs py-1 px-2.5 bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-700 rounded-lg font-semibold transition-all cursor-pointer flex items-center gap-1"
+                      className="text-[10px] text-slate-400 hover:text-white font-bold cursor-pointer"
                     >
-                      Draft Proposal
-                      <ArrowRight size={11} />
+                      Audit
                     </button>
                   </div>
-                ))
-              )}
-            </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
-        {/* Right Column (5 Columns) */}
-        <div className="lg:col-span-5 space-y-6">
-          
-          {/* SECTION 4: PAYMENTS PENDING */}
-          <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-200 bg-slate-50/50 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <CreditCard className="text-emerald-500" size={16} />
-                <h3 className="text-sm font-bold text-slate-800 tracking-tight">Awaiting Payment Settlement</h3>
-              </div>
-              <span className="text-[10px] font-mono text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100 font-bold uppercase">
-                {paymentsPending.length} pending
-              </span>
+        {/* Panel 3: Conversion Funnel */}
+        <div className="bg-[#111827]/60 backdrop-blur-md border border-[#1F2937] rounded-xl overflow-hidden shadow-lg flex flex-col justify-between min-h-[220px]">
+          <div className="px-4 py-2 bg-[#111827] border-b border-[#1F2937] flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <Layers size={13} className="text-pink-500" />
+              <span className="text-xs font-bold text-white font-sans">Conversion Funnel</span>
             </div>
-
-            <div className="divide-y divide-slate-100">
-              {paymentsPending.length === 0 ? (
-                <div className="p-8 text-center text-slate-400 text-xs">
-                  All accounts settled. Zero outstanding invoices!
-                </div>
-              ) : (
-                paymentsPending.map((lead) => (
-                  <div key={lead.id} className="p-4 flex items-center justify-between hover:bg-slate-50/40 transition-colors">
-                    <div>
-                      <p className="text-xs font-bold text-slate-800">{lead.businessName}</p>
-                      <p className="text-[10px] text-slate-400 font-mono mt-0.5">Invoice: #{lead.invoice?.id.substring(4, 11)} • Amount: ${lead.invoice?.amount}</p>
-                    </div>
-                    <button
-                      onClick={() => onFocusLead(lead.id, "website")}
-                      className="text-xs text-indigo-600 hover:text-indigo-800 font-bold cursor-pointer"
-                    >
-                      Settle Offline
-                    </button>
-                  </div>
-                ))
-              )}
-            </div>
+            <span className="text-[8px] font-mono text-slate-400 uppercase tracking-wider">
+              Metrics Progression
+            </span>
           </div>
 
-          {/* SECTION 5: DEPLOYMENTS PENDING */}
-          <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-200 bg-slate-50/50 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Ship className="text-indigo-500" size={16} />
-                <h3 className="text-sm font-bold text-slate-800 tracking-tight">Ready for Deployment</h3>
-              </div>
-              <span className="text-[10px] font-mono text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100 font-bold uppercase">
-                {deploymentsPending.length} ready
-              </span>
-            </div>
-
-            <div className="divide-y divide-slate-100">
-              {deploymentsPending.length === 0 ? (
-                <div className="p-8 text-center text-slate-400 text-xs">
-                  No custom mockups waiting for build deployment.
+          <div className="p-4 space-y-3.5 flex-1 flex flex-col justify-center">
+            {funnel.map((stage, i) => (
+              <div key={i} className="space-y-1">
+                <div className="flex items-center justify-between text-[10px] font-mono text-slate-400">
+                  <span className="font-semibold text-slate-200">{stage.label}</span>
+                  <span className="font-bold">{stage.count} ({stage.pct}%)</span>
                 </div>
-              ) : (
-                deploymentsPending.map((lead) => (
-                  <div key={lead.id} className="p-4 flex items-center justify-between hover:bg-slate-50/40 transition-colors">
-                    <div>
-                      <p className="text-xs font-bold text-slate-800">{lead.businessName}</p>
-                      <p className="text-[10px] text-slate-400 font-sans">Theme: {lead.generatedWebsite?.theme || "Modern"} • Code built</p>
-                    </div>
-                    <button
-                      onClick={() => onFocusLead(lead.id, "website")}
-                      className="text-xs py-1 px-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 border border-indigo-100 rounded-lg font-bold transition-all cursor-pointer"
-                    >
-                      Deploy Edge
-                    </button>
-                  </div>
-                ))
-              )}
+                <div className="w-full bg-[#1F2937] h-1.5 rounded-full overflow-hidden">
+                  <div 
+                    className={`${stage.color} h-full rounded-full transition-all duration-500`}
+                    style={{ width: `${Math.max(stage.pct, 5)}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Panel 4: Recent Activity */}
+        <div className="bg-[#111827]/60 backdrop-blur-md border border-[#1F2937] rounded-xl overflow-hidden shadow-lg flex flex-col justify-between min-h-[220px]">
+          <div className="px-4 py-2 bg-[#111827] border-b border-[#1F2937] flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <Activity size={13} className="text-emerald-500" />
+              <span className="text-xs font-bold text-white font-sans">Recent Activity</span>
             </div>
+            <span className="text-[8px] font-mono text-slate-400 uppercase tracking-wider">
+              Live Agency Log
+            </span>
           </div>
 
-          {/* SECTION 6: RECENT ACTIVITY STREAM */}
-          <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-200 bg-slate-50/50 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Activity className="text-slate-500" size={16} />
-                <h3 className="text-sm font-bold text-slate-800 tracking-tight">Centralized CRM Audit Feed</h3>
+          <div className="divide-y divide-[#1F2937] flex-1 max-h-[175px] overflow-y-auto">
+            {recentActivities.length === 0 ? (
+              <div className="p-6 text-center text-slate-500 text-xs flex flex-col items-center justify-center h-full">
+                No recent activity recorded.
               </div>
-            </div>
-
-            <div className="divide-y divide-slate-150 p-4 space-y-4 max-h-[380px] overflow-y-auto">
-              {recentActivities.length === 0 ? (
-                <div className="text-center text-slate-400 text-xs py-6">
-                  No recent activities recorded.
-                </div>
-              ) : (
-                recentActivities.map((act, i) => (
-                  <div key={i} className="flex gap-3 pt-2 first:pt-0">
-                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-1.5 shrink-0" />
-                    <div className="space-y-0.5">
-                      <p className="text-[11px] text-slate-700 leading-normal font-sans">
-                        <span className="font-bold text-slate-900">{act.leadName}</span>: {act.message}
-                      </p>
-                      <span className="text-[9px] font-mono text-slate-400 block">
-                        {new Date(act.timestamp).toLocaleDateString()} @ {new Date(act.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                    </div>
+            ) : (
+              recentActivities.map((act, i) => (
+                <div key={i} className="p-3 flex items-start gap-2 hover:bg-[#1F2937]/10 transition-colors">
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#A855F7] mt-1 shrink-0" />
+                  <div className="space-y-0.5">
+                    <p className="text-xs text-slate-300 leading-normal font-sans">
+                      <span className="font-bold text-white">{act.leadName}</span>: {act.message}
+                    </p>
+                    <span className="text-[8px] font-mono text-slate-500 block">
+                      {new Date(act.timestamp).toLocaleDateString()} @ {new Date(act.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
                   </div>
-                ))
-              )}
-            </div>
+                </div>
+              ))
+            )}
           </div>
-
         </div>
 
       </div>
+
     </div>
   );
 }

@@ -113,32 +113,14 @@ export interface FollowupAutomation {
   daysSinceLastContact?: number;
 }
 
-export interface WhatsAppMessage {
-  id: string;
-  body: string;
-  status: 'draft' | 'approved' | 'sent' | 'delivered' | 'read' | 'replied' | 'meeting_scheduled';
-  sentAt?: string;
-  deliveredAt?: string;
-  readAt?: string;
-  repliedAt?: string;
-}
-
-export interface InstagramMessage {
-  id: string;
-  body: string;
-  status: 'draft' | 'approved' | 'sent' | 'replied';
-  sentAt?: string;
-  repliedAt?: string;
-}
-
-export interface InstagramProfile {
-  username?: string;
-  isBusinessAccount?: boolean;
-  biography?: string;
-  followersCount?: number;
-  profilePicUrl?: string;
-  verifiedPublicInfo?: boolean;
-  linkedAt?: string;
+export interface BusinessContactInfo {
+  business_name: string;
+  email: string;
+  phone_number: string;
+  website: string;
+  instagram_url: string;
+  facebook_url: string;
+  linkedin_url: string;
 }
 
 export interface Lead {
@@ -176,7 +158,7 @@ export interface Lead {
     verified: boolean;
     dnsStatus: 'pending' | 'configured';
   };
-  paymentMethod?: 'manual' | 'wire' | 'payment_link';
+  paymentMethod?: 'manual' | 'wire' | 'payment_link' | 'upi' | 'razorpay';
   paymentDetails?: {
     manualNotes?: string;
     wireReference?: string;
@@ -190,9 +172,7 @@ export interface Lead {
   proposal?: Proposal;
   contract?: Contract;
   followupAutomation?: FollowupAutomation;
-  whatsappMessages?: WhatsAppMessage[];
-  instagramProfile?: InstagramProfile;
-  instagramMessages?: InstagramMessage[];
+  contactInfo?: BusinessContactInfo;
 }
 
 export interface CampaignStats {

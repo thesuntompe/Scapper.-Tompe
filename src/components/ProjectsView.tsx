@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { 
   FolderGit2, CheckSquare, Laptop, Globe, ArrowUpRight, ShieldCheck, 
-  Settings, Clock, Sparkles, AlertCircle, PlayCircle
+  Settings, Clock, Sparkles, AlertCircle, PlayCircle, Layers
 } from "lucide-react";
 import { Lead } from "../types";
 
@@ -10,38 +10,58 @@ interface ProjectsViewProps {
   onFocusLead: (leadId: string, tab: "dossier" | "outreach" | "website") => void;
 }
 
-export default function ProjectsView({ leads, onFocusLead }: ProjectsViewProps) {
-  const [filter, setFilter] = useState<"all" | "design" | "code" | "live">("all");
+const PROJECT_STAGES = [
+  "Wireframe",
+  "Content Collection",
+  "Design Approval",
+  "Development",
+  "Testing",
+  "Deployment",
+  "Live"
+];
 
-  // Derive active deliverables/projects from lead statuses
+export default function ProjectsView({ leads, onFocusLead }: ProjectsViewProps) {
+  const [filter, setFilter] = useState<"all" | "active" | "live">("all");
+
+  // Derive the 7-stage project status workflow based on lead CRM states
   const projects = useMemo(() => {
     return leads.map((l) => {
-      let progress = 15; // default discovery stage
-      let phase = "Audit & Discovery";
-      let statusClass = "bg-slate-100 text-slate-500 border-slate-200";
+      const status = l.status;
+      let stageIndex = 0; // default Wireframe
+      let progress = 15;
+      let statusClass = "text-slate-400 bg-slate-500/10 border-slate-500/20";
 
-      if (l.status === "outreach_drafted" || l.status === "emailed") {
-        progress = 30;
-        phase = "Client Pitching";
-        statusClass = "bg-blue-50 text-blue-600 border-blue-100";
-      } else if (l.status === "replied_interested" || l.status === "planning") {
-        progress = 50;
-        phase = "Sitemap & Wireframe";
-        statusClass = "bg-violet-50 text-violet-600 border-violet-100";
-      } else if (l.status === "site_generated" || l.status === "client_review") {
-        progress = 75;
-        phase = "HTML/CSS High Fidelity";
-        statusClass = "bg-indigo-50 text-indigo-600 border-indigo-100";
-      } else if (l.status === "paid_and_deployed") {
+      if (status === "paid_and_deployed") {
+        stageIndex = 6; // Live
         progress = 100;
-        phase = "Production Deployed";
-        statusClass = "bg-emerald-50 text-emerald-600 border-emerald-100";
+        statusClass = "text-emerald-400 bg-emerald-500/10 border-emerald-500/20";
+      } else if (l.generatedWebsite?.htmlCode && l.invoice?.status === "paid") {
+        stageIndex = 5; // Deployment
+        progress = 85;
+        statusClass = "text-indigo-400 bg-indigo-500/10 border-indigo-500/20";
+      } else if (status === "client_review") {
+        stageIndex = 4; // Testing
+        progress = 70;
+        statusClass = "text-amber-400 bg-amber-500/10 border-amber-500/20";
+      } else if (status === "site_generated") {
+        stageIndex = 3; // Development
+        progress = 55;
+        statusClass = "text-blue-400 bg-blue-500/10 border-blue-500/20";
+      } else if (status === "replied_interested" || status === "planning") {
+        stageIndex = 2; // Design Approval
+        progress = 40;
+        statusClass = "text-violet-400 bg-violet-500/10 border-violet-500/20";
+      } else if (status === "outreach_drafted" || status === "emailed" || status === "followup_scheduled") {
+        stageIndex = 1; // Content Collection
+        progress = 25;
+        statusClass = "text-sky-400 bg-sky-500/10 border-sky-500/20";
       }
 
       return {
         lead: l,
+        stage: PROJECT_STAGES[stageIndex],
+        stageIndex,
         progress,
-        phase,
         statusClass,
         hasMockup: !!l.generatedWebsite?.htmlCode
       };
@@ -50,40 +70,38 @@ export default function ProjectsView({ leads, onFocusLead }: ProjectsViewProps) 
 
   const filteredProjects = useMemo(() => {
     if (filter === "all") return projects;
-    if (filter === "design") return projects.filter(p => p.progress === 50);
-    if (filter === "code") return projects.filter(p => p.progress === 75);
-    if (filter === "live") return projects.filter(p => p.progress === 100);
+    if (filter === "active") return projects.filter(p => p.stageIndex < 6);
+    if (filter === "live") return projects.filter(p => p.stageIndex === 6);
     return projects;
   }, [projects, filter]);
 
   return (
-    <div className="space-y-6 animate-fadeIn pb-12">
-      {/* Header */}
-      <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+    <div className="space-y-4 animate-fadeIn text-[#F8FAFC]">
+      {/* Header with reduced height */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1 pb-1.5 border-b border-[#1F2937]">
         <div>
-          <h2 className="text-md font-bold text-slate-800 font-sans tracking-tight">Active Agency Deliverables</h2>
-          <p className="text-[10px] text-slate-400 font-mono">PROJECT TRAFFIC CONTROL & BUILD METRICS</p>
+          <h2 className="text-sm font-extrabold text-white font-sans tracking-tight leading-none">Deliverables Tracker</h2>
+          <p className="text-[9px] text-slate-400 font-mono mt-0.5">MILSTONE PHASES & DEVELOPMENT QUEUE</p>
         </div>
-        <span className="text-xs bg-slate-50 border border-slate-200 text-slate-600 font-mono px-2.5 py-1 rounded-full font-bold">
-          Queue: {projects.length} Total
+        <span className="text-[10px] bg-[#111827] border border-[#1F2937] text-slate-300 font-mono px-2.5 py-0.5 rounded-md">
+          Total deliverables: {projects.length}
         </span>
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex bg-slate-50 border border-slate-200 p-1 rounded-xl shadow-sm max-w-md gap-1">
+      <div className="flex bg-[#111827]/60 backdrop-blur-md border border-[#1F2937] p-1 rounded-xl shadow-md max-w-sm gap-1">
         {[
-          { id: "all" as const, label: "All Works" },
-          { id: "design" as const, label: "Wireframes" },
-          { id: "code" as const, label: "Coding / Demos" },
+          { id: "all" as const, label: "All Deliverables" },
+          { id: "active" as const, label: "In Development" },
           { id: "live" as const, label: "Production Live" }
         ].map((tab) => (
           <button
             key={tab.id}
             onClick={() => setFilter(tab.id)}
-            className={`flex-1 py-1.5 text-[10px] font-bold font-sans rounded-lg transition-all cursor-pointer ${
+            className={`flex-1 py-1 text-[9px] font-bold font-mono uppercase tracking-wider rounded-lg transition-all cursor-pointer ${
               filter === tab.id 
-                ? "bg-white text-slate-800 shadow-sm border border-slate-200" 
-                : "text-slate-500 hover:text-slate-800"
+                ? "bg-[#7C3AED] text-white shadow-sm" 
+                : "text-slate-400 hover:text-white"
             }`}
           >
             {tab.label}
@@ -91,80 +109,96 @@ export default function ProjectsView({ leads, onFocusLead }: ProjectsViewProps) 
         ))}
       </div>
 
-      {/* Project rows */}
-      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden divide-y divide-slate-100">
+      {/* Project Rows */}
+      <div className="bg-[#111827]/60 backdrop-blur-md border border-[#1F2937] rounded-xl overflow-hidden shadow-xl divide-y divide-[#1F2937]">
         {filteredProjects.length === 0 ? (
-          <div className="p-12 text-center text-slate-400 text-xs">
-            No projects in this stage. Build code or pitch leads to advance milestones!
+          <div className="p-8 text-center text-slate-500 text-xs font-sans">
+            No projects found in this phase. Run Discovery and outreach to generate new coding deliverables.
           </div>
         ) : (
           filteredProjects.map((proj) => (
-            <div key={proj.lead.id} className="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-slate-50/20 transition-colors">
-              {/* LHS: Name & Deliverables Checklist */}
-              <div className="space-y-2 max-w-sm">
-                <div>
-                  <h4 className="text-xs font-bold text-slate-800 leading-none">{proj.lead.businessName}</h4>
-                  <span className="text-[9px] font-mono text-slate-400 uppercase mt-1 block">Vulnerability Score: {proj.lead.leadScore}/100</span>
+            <div key={proj.lead.id} className="p-4 flex flex-col lg:flex-row lg:items-center justify-between gap-4 hover:bg-[#1F2937]/30 transition-colors">
+              {/* Left Column: Name & Deliverable Details */}
+              <div className="space-y-1 max-w-sm shrink-0">
+                <h4 className="text-xs font-extrabold text-white leading-tight font-sans">{proj.lead.businessName}</h4>
+                <div className="flex items-center gap-1.5 flex-wrap text-[8px] font-mono text-slate-400">
+                  <span className={`px-1.5 py-0.2 rounded border font-bold uppercase tracking-wider ${proj.statusClass}`}>
+                    Phase: {proj.stage}
+                  </span>
+                  <span>•</span>
+                  <span className={proj.hasMockup ? "text-indigo-400 font-bold" : "text-slate-500"}>
+                    {proj.hasMockup ? "Tailwind Code Built" : "Sitemap Approved"}
+                  </span>
+                  <span>•</span>
+                  <span className={proj.lead.invoice?.status === "paid" ? "text-emerald-400" : "text-slate-500"}>
+                    {proj.lead.invoice?.status === "paid" ? "Invoice Paid" : "Awaiting Escrow"}
+                  </span>
+                </div>
+              </div>
+
+              {/* Middle Column: Interactive Pipeline Steps Visualizer (The 7 steps) */}
+              <div className="flex-1 space-y-1">
+                <div className="flex items-center justify-between text-[8px] font-mono text-slate-400">
+                  <span>Development Progression</span>
+                  <span className="font-bold text-[#A855F7]">{proj.progress}%</span>
                 </div>
                 
-                {/* Visual Checklist items */}
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-sans text-slate-500">
-                  <span className="flex items-center gap-1 font-semibold text-indigo-600">
-                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-600 shrink-0" />
-                    {proj.phase}
-                  </span>
-                  <span>•</span>
-                  <span className={proj.hasMockup ? "text-slate-700 font-bold" : "text-slate-450"}>
-                    {proj.hasMockup ? "✔ Code Compiled" : "Awaiting Code Build"}
-                  </span>
-                  <span>•</span>
-                  <span>
-                    {proj.lead.invoice?.status === "paid" ? "✔ Invoice Paid" : "Payment Pending"}
-                  </span>
+                {/* 7-step horizontal visual sequence bar */}
+                <div className="grid grid-cols-7 gap-1">
+                  {PROJECT_STAGES.map((stg, sIdx) => {
+                    const isPassed = proj.stageIndex >= sIdx;
+                    const isActive = proj.stageIndex === sIdx;
+                    return (
+                      <div key={stg} className="space-y-1">
+                        <div className={`h-1 rounded-full transition-colors ${
+                          isActive 
+                            ? "bg-[#A855F7]" 
+                            : isPassed 
+                              ? "bg-[#7C3AED]" 
+                              : "bg-[#1F2937]"
+                        }`} title={stg} />
+                        <span className={`hidden md:block text-[7px] font-mono truncate text-center leading-none ${
+                          isActive 
+                            ? "text-white font-bold" 
+                            : isPassed 
+                              ? "text-slate-400" 
+                              : "text-slate-600"
+                        }`}>
+                          {stg}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
-              {/* Progress Bar & percentage */}
-              <div className="flex-1 max-w-md space-y-1.5">
-                <div className="flex items-center justify-between text-[10px] font-mono">
-                  <span className="text-slate-400">Campaign Milestone</span>
-                  <span className="font-bold text-slate-700">{proj.progress}%</span>
-                </div>
-                <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                  <div 
-                    className="bg-indigo-600 h-full transition-all duration-700 ease-out"
-                    style={{ width: `${proj.progress}%` }}
-                  />
-                </div>
-              </div>
-
-              {/* RHS Action triggers */}
-              <div className="flex items-center gap-2 self-end md:self-auto">
+              {/* Right Column: Actions */}
+              <div className="flex items-center gap-2 lg:pl-4 shrink-0 justify-end">
                 {proj.lead.status === "paid_and_deployed" ? (
                   <a
-                    href={`${window.location.origin}/live/${proj.lead.id}`}
+                    href={`/live/${proj.lead.id}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="py-1.5 px-3 border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg text-[10px] font-semibold transition-all cursor-pointer flex items-center gap-1"
+                    className="py-1 px-2.5 bg-[#111827] hover:bg-[#1F2937] border border-[#1F2937] text-slate-300 hover:text-white rounded-lg text-[10px] font-bold transition-all flex items-center gap-1"
                   >
                     View Domain
                     <ArrowUpRight size={11} />
                   </a>
                 ) : (
                   <button
-                    onClick={() => onFocusLead(proj.lead.id, proj.progress >= 75 ? "website" : proj.progress >= 30 ? "outreach" : "dossier")}
-                    className="py-1.5 px-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1"
+                    onClick={() => onFocusLead(proj.lead.id, proj.stageIndex >= 3 ? "website" : proj.stageIndex >= 1 ? "outreach" : "dossier")}
+                    className="py-1 px-2.5 bg-[#7C3AED] hover:bg-[#7C3AED]/90 text-white rounded-lg text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer"
                   >
-                    Launch Workspace
+                    Launch Build
                     <PlayCircle size={11} />
                   </button>
                 )}
               </div>
+
             </div>
           ))
         )}
       </div>
-
     </div>
   );
 }

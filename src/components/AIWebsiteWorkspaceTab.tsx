@@ -21,9 +21,10 @@ export default function AIWebsiteWorkspaceTab({ lead, onUpdateLead }: AIWebsiteW
     setTimeout(() => setCopied(false), 2000);
   };
   // Website generation settings
-  const [colors, setColors] = useState("");
-  const [booking, setBooking] = useState("");
-  const [customInfo, setCustomInfo] = useState("");
+  const [businessDescription, setBusinessDescription] = useState("");
+  const [servicesOffered, setServicesOffered] = useState("");
+  const [targetAudience, setTargetAudience] = useState("");
+  const [brandStyle, setBrandStyle] = useState("");
   const [generating, setGenerating] = useState(false);
   const [revising, setRevising] = useState(false);
   const [feedback, setFeedback] = useState("");
@@ -40,7 +41,15 @@ export default function AIWebsiteWorkspaceTab({ lead, onUpdateLead }: AIWebsiteW
   const [verifyingDns, setVerifyingDns] = useState(false);
 
   // Alternative Payment Station States
-  const [paymentTab, setPaymentTab] = useState<"wire" | "manual" | "payment_link">("wire");
+  const [paymentTab, setPaymentTab] = useState<string>(() => {
+    const upiId = localStorage.getItem("singularity_upi_id") || "";
+    const razorpayKey = localStorage.getItem("singularity_razorpay_key") || "";
+    const bankIban = localStorage.getItem("singularity_bank_iban") || "";
+    if (upiId) return "upi";
+    if (razorpayKey) return "razorpay";
+    if (bankIban) return "wire";
+    return "payment_link";
+  });
   const [manualNotes, setManualNotes] = useState(lead.paymentDetails?.manualNotes || "");
   const [wireRef, setWireRef] = useState(lead.paymentDetails?.wireReference || "");
   const [externalLink, setExternalLink] = useState(lead.paymentDetails?.externalLink || "");
@@ -55,7 +64,10 @@ export default function AIWebsiteWorkspaceTab({ lead, onUpdateLead }: AIWebsiteW
     setManualNotes(lead.paymentDetails?.manualNotes || "");
     setWireRef(lead.paymentDetails?.wireReference || "");
     setExternalLink(lead.paymentDetails?.externalLink || "");
-    setCustomInfo("");
+    setBusinessDescription("");
+    setServicesOffered("");
+    setTargetAudience("");
+    setBrandStyle("");
   }, [lead.id]);
 
   const handleGenerateSite = async () => {
@@ -64,7 +76,11 @@ export default function AIWebsiteWorkspaceTab({ lead, onUpdateLead }: AIWebsiteW
       const response = await fetch(`/api/leads/${lead.id}/generate-website`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ preferredColors: colors, bookingNeeds: booking, customInfo }),
+        body: JSON.stringify({ 
+          preferredColors: "Automatically inferred from brand style: " + brandStyle, 
+          bookingNeeds: "Services Offered: " + servicesOffered + " \nTarget Audience: " + targetAudience, 
+          customInfo: "Business Description: " + businessDescription 
+        }),
       });
       if (!response.ok) throw new Error("Failed to generate website code");
       const data = await response.json();
@@ -101,7 +117,7 @@ export default function AIWebsiteWorkspaceTab({ lead, onUpdateLead }: AIWebsiteW
   };
 
   // Alternative payment settlement
-  const handleCollectPayment = async (method: "manual" | "wire" | "payment_link") => {
+  const handleCollectPayment = async (method: "manual" | "wire" | "payment_link" | "upi" | "razorpay") => {
     setSubmittingPayment(true);
     try {
       const response = await fetch(`/api/leads/${lead.id}/collect-payment`, {
@@ -110,7 +126,7 @@ export default function AIWebsiteWorkspaceTab({ lead, onUpdateLead }: AIWebsiteW
         body: JSON.stringify({
           method,
           manualNotes: method === "manual" ? manualNotes : "",
-          wireReference: method === "wire" ? wireRef : "",
+          wireReference: method === "wire" || method === "upi" || method === "razorpay" ? wireRef : "",
           externalLink: method === "payment_link" ? externalLink : ""
         })
       });
@@ -203,40 +219,52 @@ export default function AIWebsiteWorkspaceTab({ lead, onUpdateLead }: AIWebsiteW
             </div>
             <div>
               <h3 className="text-sm font-mono uppercase tracking-wider text-slate-300 font-bold">Automatic AI Web Designer & Generator</h3>
-              <p className="text-xs text-slate-400 font-sans mt-0.5">STEPS 9 - 11: SITE PLAN & AUTO GENERATION</p>
+              <p className="text-[10px] text-slate-400 font-mono mt-0.5">LAUNCH PROFESSIONAL CAMPAIGNS FOR {lead.businessName.toUpperCase()}</p>
             </div>
           </div>
 
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <label className="block text-xs font-mono uppercase text-slate-400">Preferred Color Theme</label>
+              <label className="block text-xs font-mono uppercase text-slate-400">Business Description</label>
+              <textarea
+                value={businessDescription}
+                onChange={(e) => setBusinessDescription(e.target.value)}
+                className="w-full px-4 py-2 bg-slate-900 border border-slate-800 rounded-lg text-sm text-white focus:outline-none focus:border-indigo-500 h-20"
+                placeholder="Describe the company mission, founder story, or unique value proposition..."
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-mono uppercase text-slate-400">Services Offered</label>
+              <textarea
+                value={servicesOffered}
+                onChange={(e) => setServicesOffered(e.target.value)}
+                className="w-full px-4 py-2 bg-slate-900 border border-slate-800 rounded-lg text-sm text-white focus:outline-none focus:border-indigo-500 h-20"
+                placeholder="List the key products, core service offerings, and optional price points..."
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-mono uppercase text-slate-400">Target Audience</label>
               <input
                 type="text"
-                value={colors}
-                onChange={(e) => setColors(e.target.value)}
+                value={targetAudience}
+                onChange={(e) => setTargetAudience(e.target.value)}
                 className="w-full px-4 py-2 bg-slate-900 border border-slate-800 rounded-lg text-sm text-white focus:outline-none focus:border-indigo-500"
-                placeholder="e.g., Warm gold and deep charcoal, or fresh mint and white..."
+                placeholder="e.g. Local residential homeowners, corporate businesses, busy parents..."
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="block text-xs font-mono uppercase text-slate-400">Custom Business Profile & Info (Website Builder)</label>
-              <textarea
-                value={customInfo}
-                onChange={(e) => setCustomInfo(e.target.value)}
-                className="w-full px-4 py-2 bg-slate-900 border border-slate-800 rounded-lg text-sm text-white focus:outline-none focus:border-indigo-500 h-28"
-                placeholder="e.g., Custom pricing tiers ($49, $99, $149), a short founder bio, specific phone numbers, custom list of services, or client reviews..."
+              <label className="block text-xs font-mono uppercase text-slate-400">Brand Style</label>
+              <input
+                type="text"
+                value={brandStyle}
+                onChange={(e) => setBrandStyle(e.target.value)}
+                className="w-full px-4 py-2 bg-slate-900 border border-slate-800 rounded-lg text-sm text-white focus:outline-none focus:border-indigo-500"
+                placeholder="e.g. Minimalist layout, modern and high-contrast, warm and inviting..."
               />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="block text-xs font-mono uppercase text-slate-400">Specific Integration Needs</label>
-              <textarea
-                value={booking}
-                onChange={(e) => setBooking(e.target.value)}
-                className="w-full px-4 py-2 bg-slate-900 border border-slate-800 rounded-lg text-sm text-white focus:outline-none focus:border-indigo-500 h-24"
-                placeholder="e.g., An emergency scheduling table, or a catering order selector..."
-              />
+              <span className="text-[10px] text-slate-500 italic block mt-0.5">The AI will automatically infer tailored color palettes and font pairings based on this style.</span>
             </div>
 
             <button
@@ -244,7 +272,7 @@ export default function AIWebsiteWorkspaceTab({ lead, onUpdateLead }: AIWebsiteW
               className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold font-sans rounded-xl text-xs flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer"
             >
               <Sparkles size={14} />
-              Build Sitemap, Content Plan & Complete Site Code
+              Generate Website
             </button>
           </div>
         </div>
@@ -320,205 +348,255 @@ export default function AIWebsiteWorkspaceTab({ lead, onUpdateLead }: AIWebsiteW
               <div className="flex items-center justify-between">
                 <h3 className="text-xs font-mono uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
                   <Coins size={14} className="text-emerald-400" />
-                  Step 14: Invoice & Payment Collection
+                  Invoice & Payment Collection
                 </h3>
               </div>
 
-              {lead.invoice && (
-                <div className="space-y-4">
-                  {/* Total Card */}
-                  <div className="bg-slate-900/60 border border-slate-900 rounded-lg p-4 flex items-center justify-between">
-                    <div>
-                      <span className="text-[9px] font-mono text-slate-500 block uppercase">Outbound Agency Invoice</span>
-                      <span className="text-xs font-bold text-slate-300 font-mono">Invoice #{lead.invoice.id.substring(4, 12)}</span>
-                      <h3 className="text-xl font-bold font-sans text-white mt-1">${lead.invoice.amount} USD</h3>
-                    </div>
+              {lead.invoice && (() => {
+                const upiId = localStorage.getItem("singularity_upi_id") || "";
+                const razorpayKey = localStorage.getItem("singularity_razorpay_key") || "";
+                const bankIban = localStorage.getItem("singularity_bank_iban") || "";
+                const bankSwift = localStorage.getItem("singularity_bank_swift") || "";
+                const merchantName = localStorage.getItem("singularity_merchant_name") || "";
 
-                    <div>
-                      {lead.invoice.status === "paid" ? (
-                        <span className="px-3 py-1.5 text-[10px] font-mono font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 rounded-lg flex items-center gap-1">
-                          <CheckCircle2 size={12} />
-                          Invoice Paid
-                        </span>
-                      ) : (
-                        <span className="px-3 py-1.5 text-[10px] font-mono font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30 rounded-lg flex items-center gap-1">
-                          Awaiting Collection
-                        </span>
-                      )}
-                    </div>
-                  </div>
+                const availableTabs = [
+                  { id: "upi", label: "UPI", enabled: !!upiId },
+                  { id: "razorpay", label: "Razorpay", enabled: !!razorpayKey },
+                  { id: "payment_link", label: "Payment Link", enabled: true },
+                  { id: "wire", label: "Bank Wire", enabled: !!bankIban },
+                  { id: "manual", label: "Manual Offline", enabled: true }
+                ].filter(t => t.enabled);
 
-                  {lead.invoice.status !== "paid" ? (
-                    <div className="border border-slate-800/80 rounded-xl overflow-hidden bg-slate-900/20">
-                      {/* Billing Tabs selector */}
-                      <div className="flex bg-slate-950 border-b border-slate-850 p-1">
-                        <button
-                          type="button"
-                          onClick={() => setPaymentTab("wire")}
-                          className={`flex-1 py-2 text-[10px] font-mono rounded-lg transition-all font-bold cursor-pointer ${
-                            paymentTab === "wire" 
-                              ? "bg-indigo-600/15 text-indigo-400 border border-indigo-500/20" 
-                              : "text-slate-500 hover:text-slate-300"
-                          }`}
-                        >
-                          Bank Wire
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setPaymentTab("manual")}
-                          className={`flex-1 py-2 text-[10px] font-mono rounded-lg transition-all font-bold cursor-pointer ${
-                            paymentTab === "manual" 
-                              ? "bg-indigo-600/15 text-indigo-400 border border-indigo-500/20" 
-                              : "text-slate-500 hover:text-slate-300"
-                          }`}
-                        >
-                          Manual Offline
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setPaymentTab("payment_link")}
-                          className={`flex-1 py-2 text-[10px] font-mono rounded-lg transition-all font-bold cursor-pointer ${
-                            paymentTab === "payment_link" 
-                              ? "bg-indigo-600/15 text-indigo-400 border border-indigo-500/20" 
-                              : "text-slate-500 hover:text-slate-300"
-                          }`}
-                        >
-                          Payment Link
-                        </button>
+                return (
+                  <div className="space-y-4">
+                    {/* Total Card */}
+                    <div className="bg-slate-900/60 border border-slate-900 rounded-lg p-4 flex items-center justify-between">
+                      <div>
+                        <span className="text-[9px] font-mono text-slate-500 block uppercase">Outbound Agency Invoice</span>
+                        <span className="text-xs font-bold text-slate-300 font-mono">Invoice #{lead.invoice.id.substring(4, 12)}</span>
+                        <h3 className="text-xl font-bold font-sans text-white mt-1">${lead.invoice.amount} USD</h3>
                       </div>
 
-                      <div className="p-4 space-y-3">
-                        {paymentTab === "wire" && (
-                          <div className="space-y-3">
-                            <div className="p-3 bg-slate-950 border border-slate-900 rounded-lg space-y-1.5 text-[10px] font-mono text-slate-400">
-                              <p className="font-bold text-white text-[11px] border-b border-slate-800 pb-1 flex items-center justify-between">
-                                <span>IBAN/SWIFT Wire Instructions</span>
-                                <span className="text-[9px] font-normal text-indigo-400">Copy to client</span>
-                              </p>
-                              <p><span className="text-slate-500">Bank:</span> Singularity Commerce Vault</p>
-                              <p><span className="text-slate-500">Routing:</span> 021000021</p>
-                              <p><span className="text-slate-500">IBAN:</span> US76 SING 3209 8121 2101</p>
-                              <p><span className="text-slate-500">Reference:</span> {lead.businessName.toUpperCase().replace(/\s+/g, "-")}</p>
-                            </div>
-
-                            <div className="space-y-1.5">
-                              <label className="block text-[10px] font-mono text-slate-400 uppercase">SWIFT/Wire Reference Number</label>
-                              <input
-                                type="text"
-                                value={wireRef}
-                                onChange={(e) => setWireRef(e.target.value)}
-                                className="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white focus:outline-none focus:border-indigo-500"
-                                placeholder="e.g. TXN-812739281-W"
-                              />
-                            </div>
-
-                            <button
-                              onClick={() => handleCollectPayment("wire")}
-                              disabled={submittingPayment || !wireRef.trim()}
-                              className="w-full py-2 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 text-white font-bold rounded-lg text-[10px] uppercase font-mono tracking-wider transition-all flex items-center justify-center gap-1 cursor-pointer"
-                            >
-                              {submittingPayment ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
-                              Verify Bank Wire & Settle Invoice
-                            </button>
-                          </div>
+                      <div>
+                        {lead.invoice.status === "paid" ? (
+                          <span className="px-3 py-1.5 text-[10px] font-mono font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 rounded-lg flex items-center gap-1">
+                            <CheckCircle2 size={12} />
+                            Invoice Paid
+                          </span>
+                        ) : (
+                          <span className="px-3 py-1.5 text-[10px] font-mono font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30 rounded-lg flex items-center gap-1">
+                            Awaiting Collection
+                          </span>
                         )}
+                      </div>
+                    </div>
 
-                        {paymentTab === "manual" && (
-                          <div className="space-y-3">
-                            <div className="space-y-1.5">
-                              <label className="block text-[10px] font-mono text-slate-400 uppercase">Collection Audit Notes</label>
-                              <textarea
-                                value={manualNotes}
-                                onChange={(e) => setManualNotes(e.target.value)}
-                                className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white focus:outline-none focus:border-indigo-500 h-16"
-                                placeholder="e.g. Collected cash offline directly from owner Carlos. Signed agency receipt."
-                              />
-                            </div>
-
+                    {lead.invoice.status !== "paid" ? (
+                      <div className="border border-slate-800/80 rounded-xl overflow-hidden bg-slate-900/20">
+                        {/* Billing Tabs selector */}
+                        <div className="flex bg-slate-950 border-b border-slate-850 p-1 flex-wrap gap-1">
+                          {availableTabs.map((t) => (
                             <button
-                              onClick={() => handleCollectPayment("manual")}
-                              disabled={submittingPayment || !manualNotes.trim()}
-                              className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 text-white font-bold rounded-lg text-[10px] uppercase font-mono tracking-wider transition-all flex items-center justify-center gap-1 cursor-pointer"
+                              key={t.id}
+                              type="button"
+                              onClick={() => setPaymentTab(t.id)}
+                              className={`flex-1 min-w-[60px] py-2 text-[10px] font-mono rounded-lg transition-all font-bold cursor-pointer ${
+                                paymentTab === t.id 
+                                  ? "bg-indigo-600/15 text-indigo-400 border border-indigo-500/20" 
+                                  : "text-slate-500 hover:text-slate-300"
+                              }`}
                             >
-                              {submittingPayment ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
-                              Record Manual Offline Settlement
+                              {t.label}
                             </button>
-                          </div>
-                        )}
+                          ))}
+                        </div>
 
-                        {paymentTab === "payment_link" && (
-                          <div className="space-y-3">
-                            <p className="text-[10px] text-slate-400 leading-relaxed font-sans">
-                              Specify an external billing, Stripe, or PayPal Invoice checkout link that you have prepared for this client campaign.
-                            </p>
+                        <div className="p-4 space-y-3">
+                          {paymentTab === "upi" && (
+                            <div className="space-y-3">
+                              <div className="p-3 bg-slate-950 border border-slate-900 rounded-lg space-y-2 text-[10px] font-mono text-slate-400">
+                                <p className="font-bold text-white text-[11px] border-b border-slate-800 pb-1">
+                                  UPI Routing Terminal
+                                </p>
+                                <p><span className="text-slate-500">Payee:</span> {merchantName || "Unconfigured Payee"}</p>
+                                <p><span className="text-slate-500">VPA ID:</span> <span className="text-emerald-400 font-bold">{upiId}</span></p>
+                              </div>
 
-                            <div className="space-y-1.5">
-                              <label className="block text-[10px] font-mono text-slate-400 uppercase">Client Invoice URL</label>
-                              <div className="relative">
-                                <Link2 size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                              <div className="space-y-1.5">
+                                <label className="block text-[10px] font-mono text-slate-400 uppercase">UPI Reference ID / Ref Number</label>
                                 <input
-                                  type="url"
-                                  value={externalLink}
-                                  onChange={(e) => setExternalLink(e.target.value)}
-                                  className="w-full pl-8 pr-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white focus:outline-none focus:border-indigo-500"
-                                  placeholder="https://buy.stripe.com/abc..."
+                                  type="text"
+                                  value={wireRef}
+                                  onChange={(e) => setWireRef(e.target.value)}
+                                  className="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white focus:outline-none focus:border-indigo-500"
+                                  placeholder="e.g. UPI-928139-W"
                                 />
                               </div>
+
+                              <button
+                                onClick={() => handleCollectPayment("upi")}
+                                disabled={submittingPayment || !wireRef.trim()}
+                                className="w-full py-2 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 text-white font-bold rounded-lg text-[10px] uppercase font-mono tracking-wider transition-all flex items-center justify-center gap-1 cursor-pointer"
+                              >
+                                {submittingPayment ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
+                                Verify UPI Payment & Settle Invoice
+                              </button>
                             </div>
+                          )}
 
-                            <button
-                              onClick={() => handleCollectPayment("payment_link")}
-                              disabled={submittingPayment || !externalLink.trim()}
-                              className="w-full py-2 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 text-white font-bold rounded-lg text-[10px] uppercase font-mono tracking-wider transition-all flex items-center justify-center gap-1 cursor-pointer"
-                            >
-                              {submittingPayment ? <Loader2 size={12} className="animate-spin" /> : <Link2 size={12} />}
-                              Save external billing link
-                            </button>
-
-                            {lead.paymentDetails?.externalLink && (
-                              <div className="mt-3 p-2 bg-slate-950 border border-slate-900 rounded-lg space-y-1.5">
-                                <p className="text-[9px] font-mono text-indigo-400 font-bold flex items-center gap-1">
-                                  <Check size={10} /> Billing Link Live:
+                          {paymentTab === "razorpay" && (
+                            <div className="space-y-3">
+                              <div className="p-3 bg-slate-950 border border-slate-900 rounded-lg space-y-2 text-[10px] font-mono text-slate-400">
+                                <p className="font-bold text-white text-[11px] border-b border-slate-800 pb-1">
+                                  Razorpay Gateway Secure
                                 </p>
-                                <a 
-                                  href={lead.paymentDetails.externalLink} 
-                                  target="_blank" 
-                                  rel="noreferrer" 
-                                  className="text-[10px] text-slate-300 font-mono underline block truncate hover:text-white"
-                                >
-                                  {lead.paymentDetails.externalLink}
-                                </a>
-                                <div className="border-t border-slate-900 pt-1.5 mt-1 flex justify-end">
-                                  <button
-                                    onClick={() => handleCollectPayment("manual")}
-                                    className="py-1 px-2.5 bg-indigo-600/20 text-indigo-400 border border-indigo-500/10 hover:bg-indigo-600 hover:text-white rounded-md text-[9px] font-mono font-bold transition-all cursor-pointer"
-                                  >
-                                    Mark Link Settled Offline
-                                  </button>
+                                <p><span className="text-slate-500">Merchant Account:</span> {merchantName || "Unconfigured"}</p>
+                                <p><span className="text-slate-500">Key ID:</span> <span className="text-slate-300">Active</span></p>
+                              </div>
+
+                              <button
+                                onClick={() => handleCollectPayment("razorpay")}
+                                disabled={submittingPayment}
+                                className="w-full py-2 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 text-white font-bold rounded-lg text-[10px] uppercase font-mono tracking-wider transition-all flex items-center justify-center gap-1 cursor-pointer"
+                              >
+                                {submittingPayment ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
+                                Trigger Live Gateway Checkout Card
+                              </button>
+                            </div>
+                          )}
+
+                          {paymentTab === "wire" && (
+                            <div className="space-y-3">
+                              <div className="p-3 bg-slate-950 border border-slate-900 rounded-lg space-y-1.5 text-[10px] font-mono text-slate-400">
+                                <p className="font-bold text-white text-[11px] border-b border-slate-800 pb-1 flex items-center justify-between">
+                                  <span>IBAN/SWIFT Wire Instructions</span>
+                                  <span className="text-[9px] font-normal text-indigo-400">Copy to client</span>
+                                </p>
+                                <p><span className="text-slate-500">Bank:</span> {merchantName || "Singularity Bank"}</p>
+                                <p><span className="text-slate-500">IBAN:</span> {bankIban}</p>
+                                <p><span className="text-slate-500">SWIFT:</span> {bankSwift}</p>
+                                <p><span className="text-slate-500">Reference:</span> {lead.businessName.toUpperCase().replace(/\s+/g, "-")}</p>
+                              </div>
+
+                              <div className="space-y-1.5">
+                                <label className="block text-[10px] font-mono text-slate-400 uppercase">SWIFT/Wire Reference Number</label>
+                                <input
+                                  type="text"
+                                  value={wireRef}
+                                  onChange={(e) => setWireRef(e.target.value)}
+                                  className="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white focus:outline-none focus:border-indigo-500"
+                                  placeholder="e.g. TXN-812739281-W"
+                                />
+                              </div>
+
+                              <button
+                                onClick={() => handleCollectPayment("wire")}
+                                disabled={submittingPayment || !wireRef.trim()}
+                                className="w-full py-2 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 text-white font-bold rounded-lg text-[10px] uppercase font-mono tracking-wider transition-all flex items-center justify-center gap-1 cursor-pointer"
+                              >
+                                {submittingPayment ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
+                                Verify Bank Wire & Settle Invoice
+                              </button>
+                            </div>
+                          )}
+
+                          {paymentTab === "manual" && (
+                            <div className="space-y-3">
+                              <div className="space-y-1.5">
+                                <label className="block text-[10px] font-mono text-slate-400 uppercase">Collection Audit Notes</label>
+                                <textarea
+                                  value={manualNotes}
+                                  onChange={(e) => setManualNotes(e.target.value)}
+                                  className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white focus:outline-none focus:border-indigo-500 h-16"
+                                  placeholder="e.g. Collected cash offline directly from owner Carlos. Signed agency receipt."
+                                />
+                              </div>
+
+                              <button
+                                onClick={() => handleCollectPayment("manual")}
+                                disabled={submittingPayment || !manualNotes.trim()}
+                                className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 text-white font-bold rounded-lg text-[10px] uppercase font-mono tracking-wider transition-all flex items-center justify-center gap-1 cursor-pointer"
+                              >
+                                {submittingPayment ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
+                                Record Manual Offline Settlement
+                              </button>
+                            </div>
+                          )}
+
+                          {paymentTab === "payment_link" && (
+                            <div className="space-y-3">
+                              <p className="text-[10px] text-slate-400 leading-relaxed font-sans">
+                                Specify an external billing, Stripe, or PayPal Invoice checkout link that you have prepared for this client campaign.
+                              </p>
+
+                              <div className="space-y-1.5">
+                                <label className="block text-[10px] font-mono text-slate-400 uppercase">Client Invoice URL</label>
+                                <div className="relative">
+                                  <Link2 size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                                  <input
+                                    type="url"
+                                    value={externalLink}
+                                    onChange={(e) => setExternalLink(e.target.value)}
+                                    className="w-full pl-8 pr-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white focus:outline-none focus:border-indigo-500"
+                                    placeholder="https://buy.stripe.com/abc..."
+                                  />
                                 </div>
                               </div>
-                            )}
-                          </div>
+
+                              <button
+                                onClick={() => handleCollectPayment("payment_link")}
+                                disabled={submittingPayment || !externalLink.trim()}
+                                className="w-full py-2 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 text-white font-bold rounded-lg text-[10px] uppercase font-mono tracking-wider transition-all flex items-center justify-center gap-1 cursor-pointer"
+                              >
+                                {submittingPayment ? <Loader2 size={12} className="animate-spin" /> : <Link2 size={12} />}
+                                Save external billing link
+                              </button>
+
+                              {lead.paymentDetails?.externalLink && (
+                                <div className="mt-3 p-2 bg-slate-950 border border-slate-900 rounded-lg space-y-1.5">
+                                  <p className="text-[9px] font-mono text-indigo-400 font-bold flex items-center gap-1">
+                                    <Check size={10} /> Billing Link Live:
+                                  </p>
+                                  <a 
+                                    href={lead.paymentDetails.externalLink} 
+                                    target="_blank" 
+                                    rel="noreferrer" 
+                                    className="text-[10px] text-slate-300 font-mono underline block truncate hover:text-white"
+                                  >
+                                    {lead.paymentDetails.externalLink}
+                                  </a>
+                                  <div className="border-t border-slate-900 pt-1.5 mt-1 flex justify-end">
+                                    <button
+                                      onClick={() => handleCollectPayment("manual")}
+                                      className="py-1 px-2.5 bg-indigo-600/20 text-indigo-400 border border-indigo-500/10 hover:bg-indigo-600 hover:text-white rounded-md text-[9px] font-mono font-bold transition-all cursor-pointer"
+                                    >
+                                      Mark Link Settled Offline
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      /* Settled details display */
+                      <div className="p-3 bg-emerald-500/5 border border-emerald-500/10 rounded-lg text-xs space-y-1.5">
+                        <p className="font-bold text-emerald-400 font-mono text-[10px] flex items-center gap-1 uppercase">
+                          <Check size={12} />
+                          Payment Settled via {lead.paymentMethod?.toUpperCase() || "Offline Collection"}
+                        </p>
+                        {(lead.paymentMethod === "wire" || lead.paymentMethod === "upi" || lead.paymentMethod === "razorpay") && (
+                          <p className="text-slate-400 font-mono text-[10px]">Transaction Ref: <span className="text-white font-bold">{lead.paymentDetails?.wireReference}</span></p>
+                        )}
+                        {lead.paymentMethod === "manual" && (
+                          <p className="text-slate-400 font-sans text-[10px]">Audit Notes: <span className="text-white italic">"{lead.paymentDetails?.manualNotes}"</span></p>
                         )}
                       </div>
-                    </div>
-                  ) : (
-                    /* Settled details display */
-                    <div className="p-3 bg-emerald-500/5 border border-emerald-500/10 rounded-lg text-xs space-y-1.5">
-                      <p className="font-bold text-emerald-400 font-mono text-[10px] flex items-center gap-1 uppercase">
-                        <Check size={12} />
-                        Payment Settled via {lead.paymentMethod?.toUpperCase() || "Offline Collection"}
-                      </p>
-                      {lead.paymentMethod === "wire" && (
-                        <p className="text-slate-400 font-mono text-[10px]">Wire Transaction Ref: <span className="text-white font-bold">{lead.paymentDetails?.wireReference}</span></p>
-                      )}
-                      {lead.paymentMethod === "manual" && (
-                        <p className="text-slate-400 font-sans text-[10px]">Audit Notes: <span className="text-white italic">"{lead.paymentDetails?.manualNotes}"</span></p>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* Vercel logs deployment stream */}
               {lead.status === "paid_and_deployed" && (
@@ -570,7 +648,7 @@ export default function AIWebsiteWorkspaceTab({ lead, onUpdateLead }: AIWebsiteW
             <div className="bg-slate-950 border border-slate-900 rounded-xl p-5 space-y-4">
               <h3 className="text-xs font-mono uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
                 <Globe size={14} className="text-indigo-400" />
-                Step 15: Brand Identity (Custom Domain)
+                Website Configuration
               </h3>
 
               {lead.customDomain?.verified ? (
@@ -600,7 +678,7 @@ export default function AIWebsiteWorkspaceTab({ lead, onUpdateLead }: AIWebsiteW
                     <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-900 text-[10px] font-mono text-slate-400">
                       <div>
                         <span className="text-[8px] text-slate-500 block">Edge Server:</span>
-                        sterling-pages.net
+                        singularity-pages.net
                       </div>
                       <div>
                         <span className="text-[8px] text-slate-500 block">Propagation:</span>
@@ -665,7 +743,7 @@ export default function AIWebsiteWorkspaceTab({ lead, onUpdateLead }: AIWebsiteW
                         <div className="p-1.5 grid grid-cols-12 gap-1 text-[9px] font-mono text-slate-300 bg-slate-950/20 border-b border-slate-800">
                           <span className="col-span-3 text-indigo-400 font-bold">CNAME</span>
                           <span className="col-span-3">www</span>
-                          <span className="col-span-6 truncate">sterling-agent.pages.dev</span>
+                          <span className="col-span-6 truncate">singularity-agent.pages.dev</span>
                         </div>
                         <div className="p-1.5 grid grid-cols-12 gap-1 text-[9px] font-mono text-slate-300 bg-slate-950/20">
                           <span className="col-span-3 text-emerald-400 font-bold">A</span>
@@ -710,7 +788,7 @@ export default function AIWebsiteWorkspaceTab({ lead, onUpdateLead }: AIWebsiteW
               <div className="flex items-center gap-1.5 text-indigo-400">
                 <Smartphone size={16} />
                 <h3 className="text-xs font-mono uppercase tracking-wider text-slate-300 font-bold">
-                  Step 16: Device Testing & QR Code
+                  Deployment Settings
                 </h3>
               </div>
 
@@ -722,7 +800,7 @@ export default function AIWebsiteWorkspaceTab({ lead, onUpdateLead }: AIWebsiteW
                     </p>
                     <p className="text-[10px] text-amber-500 font-sans flex items-start gap-1">
                       <AlertTriangle size={12} className="shrink-0 mt-0.5" />
-                      <span>Note: The simulated agency domain <code>.sterling.agency</code> is a mockup. Please use the sandbox URL below for real testing.</span>
+                      <span>Note: The simulated agency domain <code>.singularity.ai</code> is a mockup. Please use the sandbox URL below for real testing.</span>
                     </p>
                   </div>
 
@@ -879,7 +957,7 @@ export default function AIWebsiteWorkspaceTab({ lead, onUpdateLead }: AIWebsiteW
                         <span className="text-slate-300 font-sans font-semibold group-hover:text-indigo-400 transition-colors">
                           {lead.customDomain?.verified 
                             ? lead.customDomain.domainName 
-                            : `${lead.businessName.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.sterling.agency`
+                            : `${lead.businessName.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.singularity.ai`
                           }
                         </span>
                       </div>

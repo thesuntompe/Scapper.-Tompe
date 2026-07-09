@@ -111,7 +111,7 @@ export default function App() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-[#111827] font-sans antialiased flex selection:bg-indigo-600/10 selection:text-indigo-900">
+    <div className="min-h-screen bg-[#0B1020] text-[#F8FAFC] font-sans antialiased flex selection:bg-[#7C3AED]/20 selection:text-[#F8FAFC]">
       
       {/* 1. DESKTOP PERMANENT LEFT SIDEBAR */}
       <aside className="hidden lg:flex flex-col w-64 bg-slate-950 border-r border-slate-900 text-slate-300 shrink-0 h-screen sticky top-0">
@@ -135,7 +135,7 @@ export default function App() {
                 }}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold font-sans transition-all cursor-pointer ${
                   isActive 
-                    ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/10" 
+                    ? "bg-[#7C3AED] text-white shadow-md shadow-[#7C3AED]/10" 
                     : "hover:bg-slate-900 hover:text-white text-slate-400"
                 }`}
               >
@@ -145,34 +145,83 @@ export default function App() {
             );
           })}
 
-          {/* Active Client Focus Sub-nav links if lead selected */}
-          {selectedLead && (
-            <div className="pt-6 border-t border-slate-900 mt-6 space-y-1.5 animate-fadeIn">
-              <span className="px-3 text-[10px] font-mono text-slate-500 uppercase tracking-widest font-bold block mb-2">Focused Workspace</span>
-              
-              <div className="px-3 py-2 bg-slate-900/50 rounded-xl border border-slate-900/80 mb-2">
-                <p className="text-xs font-bold text-white truncate leading-tight">{selectedLead.businessName}</p>
-                <button 
-                  onClick={() => setSelectedLeadId(null)}
-                  className="text-[9px] font-mono text-indigo-400 hover:text-indigo-300 mt-1 uppercase font-bold tracking-wider cursor-pointer"
+          {/* Active Client Focus Sub-nav links */}
+          <div className="pt-6 border-t border-slate-900 mt-6 space-y-1.5">
+            <span className="px-3 text-[10px] font-mono text-slate-500 uppercase tracking-widest font-bold block mb-2">Client Focus</span>
+            
+            {selectedLead ? (
+              <div className="space-y-1.5">
+                <div className="px-3 py-2 bg-slate-900/50 rounded-xl border border-slate-900/80 mb-2">
+                  <p className="text-xs font-bold text-white truncate leading-tight">{selectedLead.businessName}</p>
+                  <button 
+                    onClick={() => {
+                      setSelectedLeadId(null);
+                      if (["dossier_focus", "outreach", "websites"].includes(activeSection)) {
+                        setActiveSection("dashboard");
+                      }
+                    }}
+                    className="text-[9px] font-mono text-[#A855F7] hover:text-[#c084fc] mt-1 uppercase font-bold tracking-wider cursor-pointer"
+                  >
+                    Clear Active Focus ×
+                  </button>
+                </div>
+
+                <button
+                  onClick={() => setActiveSection("dossier_focus")}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[11px] font-semibold font-sans transition-all cursor-pointer ${
+                    activeSection === "dossier_focus" 
+                      ? "bg-[#7C3AED]/15 border border-[#7C3AED]/20 text-[#A855F7] font-bold" 
+                      : "hover:bg-slate-900 hover:text-white text-slate-400"
+                  }`}
                 >
-                  Clear Active Focus ×
+                  <ShieldCheck size={14} />
+                  Dossier & Audit
+                </button>
+
+                <button
+                  onClick={() => setActiveSection("outreach")}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[11px] font-semibold font-sans transition-all cursor-pointer ${
+                    activeSection === "outreach" 
+                      ? "bg-[#7C3AED]/15 border border-[#7C3AED]/20 text-[#A855F7] font-bold" 
+                      : "hover:bg-slate-900 hover:text-white text-slate-400"
+                  }`}
+                >
+                  <Mail size={14} />
+                  Outreach Campaigns
+                </button>
+
+                <button
+                  onClick={() => setActiveSection("websites")}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[11px] font-semibold font-sans transition-all cursor-pointer ${
+                    activeSection === "websites" 
+                      ? "bg-[#7C3AED]/15 border border-[#7C3AED]/20 text-[#A855F7] font-bold" 
+                      : "hover:bg-slate-900 hover:text-white text-slate-400"
+                  }`}
+                >
+                  <Globe size={14} />
+                  Website Sandbox
                 </button>
               </div>
-
-              <button
-                onClick={() => setActiveSection("dossier_focus")}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[11px] font-semibold font-sans transition-all cursor-pointer ${
-                  activeSection === "dossier_focus" 
-                    ? "bg-indigo-600/15 border border-indigo-500/20 text-indigo-400 font-bold" 
-                    : "hover:bg-slate-900 hover:text-white text-slate-400"
-                }`}
-              >
-                <ShieldCheck size={14} />
-                Dossier & Audit
-              </button>
-            </div>
-          )}
+            ) : (
+              <div className="px-3 py-2 space-y-2 bg-slate-950/40 border border-slate-900 rounded-xl">
+                <p className="text-[10px] text-slate-500 font-sans leading-relaxed">Select a client to unlock custom workspaces, sitemaps, and live sandboxes.</p>
+                <select
+                  value={selectedLeadId || ""}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setSelectedLeadId(val || null);
+                    if (val) setActiveSection("dossier_focus");
+                  }}
+                  className="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-800 rounded-lg text-[11px] text-slate-300 focus:outline-none focus:border-indigo-500 font-sans cursor-pointer"
+                >
+                  <option value="">-- Focus Client --</option>
+                  {leads.map((l) => (
+                    <option key={l.id} value={l.id}>{l.businessName}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
         </nav>
 
         {/* Database Status Footer */}
@@ -255,14 +304,14 @@ export default function App() {
       <div className="flex-1 flex flex-col min-h-screen lg:pl-0 pt-14 lg:pt-0 overflow-x-hidden">
         
         {/* Persistent Top Utility bar (Linear/Stripe style) */}
-        <header className="bg-white border-b border-slate-200 h-14 flex items-center justify-between px-6 shrink-0 sticky top-14 lg:top-0 z-20">
-          <div className="flex items-center gap-3 font-sans text-xs text-slate-500">
-            <span className="font-bold text-slate-700 capitalize">{activeSection.replace("_focus", " workspace")}</span>
+        <header className="bg-[#111827] border-b border-[#1F2937] h-14 flex items-center justify-between px-6 shrink-0 sticky top-14 lg:top-0 z-20">
+          <div className="flex items-center gap-3 font-sans text-xs text-slate-400">
+            <span className="font-bold text-slate-200 capitalize">{activeSection.replace("_focus", " workspace")}</span>
             {selectedLead && (
               <>
                 <span>/</span>
-                <span className="font-mono bg-slate-50 border border-slate-250 py-0.5 px-2 rounded-md text-slate-700 flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-600" />
+                <span className="font-mono bg-[#0B1020] border border-[#1F2937] py-0.5 px-2 rounded-md text-slate-200 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#A855F7]" />
                   Focus: {selectedLead.businessName}
                 </span>
               </>
@@ -273,22 +322,22 @@ export default function App() {
           <div className="relative">
             <button
               onClick={() => setShowFocusDropdown(!showFocusDropdown)}
-              className="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-250 hover:border-slate-350 text-slate-700 text-[11px] font-bold font-sans rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
+              className="px-3 py-1.5 bg-[#0B1020] hover:bg-[#111827] border border-[#1F2937] text-slate-200 text-[11px] font-bold font-sans rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
             >
-              <User size={13} className="text-slate-500" />
+              <User size={13} className="text-slate-400" />
               {selectedLead ? selectedLead.businessName : "Select Active Client Focus"}
-              <ChevronDown size={11} className={`text-slate-500 transition-transform ${showFocusDropdown ? "rotate-180" : ""}`} />
+              <ChevronDown size={11} className={`text-slate-400 transition-transform ${showFocusDropdown ? "rotate-180" : ""}`} />
             </button>
 
             {showFocusDropdown && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setShowFocusDropdown(false)} />
-                <div className="absolute right-0 mt-2 w-64 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 p-2 text-xs divide-y divide-slate-100 animate-fadeIn">
+                <div className="absolute right-0 mt-2 w-64 bg-[#111827] border border-[#1F2937] rounded-2xl shadow-xl z-50 p-2 text-xs divide-y divide-[#1F2937] animate-fadeIn">
                   <div className="p-2 text-[10px] font-mono text-slate-400 uppercase font-bold">Select target client focus</div>
                   
                   <div className="max-h-56 overflow-y-auto py-1 space-y-0.5">
                     {leads.length === 0 ? (
-                      <div className="p-3 text-center text-slate-400 italic font-sans">No leads yet</div>
+                      <div className="p-3 text-center text-slate-500 italic font-sans">No leads yet</div>
                     ) : (
                       leads.map((l) => (
                         <button
@@ -299,12 +348,12 @@ export default function App() {
                           }}
                           className={`w-full text-left p-2 rounded-lg font-sans font-medium transition-colors cursor-pointer flex items-center justify-between ${
                             selectedLeadId === l.id 
-                              ? "bg-indigo-50 text-indigo-700 font-bold" 
-                              : "hover:bg-slate-50 text-slate-700"
+                              ? "bg-[#7C3AED]/20 text-[#A855F7] font-bold" 
+                              : "hover:bg-[#0B1020] text-slate-300"
                           }`}
                         >
                           <span className="truncate pr-2">{l.businessName}</span>
-                          <span className="text-[9px] font-mono text-slate-400 shrink-0">{l.category}</span>
+                          <span className="text-[9px] font-mono text-slate-500 shrink-0">{l.category}</span>
                         </button>
                       ))
                     )}
@@ -317,7 +366,7 @@ export default function App() {
                           setSelectedLeadId(null);
                           setShowFocusDropdown(false);
                         }}
-                        className="w-full text-center py-1.5 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-100 font-semibold font-sans cursor-pointer"
+                        className="w-full text-center py-1.5 bg-rose-950/40 text-rose-400 hover:bg-rose-950/60 rounded-lg font-semibold font-sans cursor-pointer"
                       >
                         Clear Focus
                       </button>
@@ -424,28 +473,15 @@ export default function App() {
                     </div>
                   ) : (
                     /* Client picker fallback for Outreach */
-                    <div className="max-w-xl mx-auto bg-white border border-slate-200 rounded-2xl p-8 shadow-sm text-center space-y-5">
-                      <div className="p-3 bg-indigo-50 border border-indigo-100 text-indigo-600 rounded-full w-fit mx-auto">
-                        <Mail size={24} />
+                    <div className="max-w-md mx-auto bg-slate-950 border border-slate-900 rounded-2xl p-8 text-center space-y-4 shadow-xl">
+                      <div className="p-3 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 rounded-full w-fit mx-auto">
+                        <Mail size={20} />
                       </div>
                       <div className="space-y-1.5">
-                        <h3 className="text-sm font-bold text-slate-800 font-sans">Focus a client to configure Pitch</h3>
-                        <p className="text-xs text-slate-500 font-sans leading-relaxed">
-                          Select a discovered client to draft custom sitemaps, send emails, or detect and track Instagram DM/WhatsApp sequences.
+                        <h3 className="text-xs font-mono uppercase tracking-wider text-slate-300 font-bold">Client Focus Required</h3>
+                        <p className="text-xs text-slate-400 font-sans leading-relaxed">
+                          Please select an active target client from the <strong className="text-white">Client Focus</strong> panel in the sidebar to configure pitches, draft custom campaigns, and monitor outreach.
                         </p>
-                      </div>
-
-                      <div className="grid grid-cols-1 gap-2 pt-2 text-left max-h-60 overflow-y-auto">
-                        {leads.map((l) => (
-                          <button
-                            key={l.id}
-                            onClick={() => setSelectedLeadId(l.id)}
-                            className="p-3 bg-slate-50 hover:bg-indigo-50 hover:text-indigo-800 border border-slate-200 rounded-xl transition-all cursor-pointer flex justify-between items-center text-xs text-slate-700 font-semibold"
-                          >
-                            <span>{l.businessName}</span>
-                            <span className="text-[10px] font-mono text-slate-400 font-normal">{l.category}</span>
-                          </button>
-                        ))}
                       </div>
                     </div>
                   )}
@@ -477,30 +513,15 @@ export default function App() {
                     </div>
                   ) : (
                     /* Client picker fallback for Websites */
-                    <div className="max-w-xl mx-auto bg-white border border-slate-200 rounded-2xl p-8 shadow-sm text-center space-y-5">
-                      <div className="p-3 bg-indigo-50 border border-indigo-100 text-indigo-600 rounded-full w-fit mx-auto">
-                        <Globe size={24} />
+                    <div className="max-w-md mx-auto bg-slate-950 border border-slate-900 rounded-2xl p-8 text-center space-y-4 shadow-xl">
+                      <div className="p-3 bg-[#A855F7]/10 border border-[#A855F7]/20 text-[#A855F7] rounded-full w-fit mx-auto">
+                        <Globe size={20} />
                       </div>
                       <div className="space-y-1.5">
-                        <h3 className="text-sm font-bold text-slate-800 font-sans">Focus a client to run website workspace</h3>
-                        <p className="text-xs text-slate-500 font-sans leading-relaxed">
-                          Build, compile, and preview high-converting Tailwind landing pages, sitemaps, custom domains, or manage invoice settling.
+                        <h3 className="text-xs font-mono uppercase tracking-wider text-slate-300 font-bold">Client Focus Required</h3>
+                        <p className="text-xs text-slate-400 font-sans leading-relaxed">
+                          Please select an active target client from the <strong className="text-white">Client Focus</strong> panel in the sidebar to build Tailwind landing pages, custom domains, and configure production builds.
                         </p>
-                      </div>
-
-                      <div className="grid grid-cols-1 gap-2 pt-2 text-left max-h-60 overflow-y-auto">
-                        {leads.map((l) => (
-                          <button
-                            key={l.id}
-                            onClick={() => setSelectedLeadId(l.id)}
-                            className="p-3 bg-slate-50 hover:bg-indigo-50 hover:text-indigo-800 border border-slate-200 rounded-xl transition-all cursor-pointer flex justify-between items-center text-xs text-slate-700 font-semibold"
-                          >
-                            <span>{l.businessName}</span>
-                            <span className="text-[10px] font-mono text-slate-400 font-normal">
-                              {l.generatedWebsite?.htmlCode ? "Mockup Compiled" : "Awaiting Code"}
-                            </span>
-                          </button>
-                        ))}
                       </div>
                     </div>
                   )}
