@@ -24,23 +24,39 @@ export default function CommunicationCenterTab({ lead }: CommunicationCenterTabP
   const facebook_url = lead.contactInfo?.facebook_url || "";
   const linkedin_url = lead.contactInfo?.linkedin_url || "";
 
-  // Determine if any contact info was discovered
-  const hasContactInfo = !!(phone || email || instagram_url || facebook_url || linkedin_url);
-  
+  // Validate Instagram URL
+  const isInstagramUrlValid = instagram_url.startsWith("https://instagram.com/") || instagram_url.startsWith("https://www.instagram.com/");
+
   // Clean phone number to digits only for wa.me redirect
   const cleanPhone = phone.replace(/\D/g, "");
+  const isPhoneValid = phone && cleanPhone.length >= 10;
 
-  // Use overall score if present, otherwise default to a high-confidence 92% as requested
-  const confidenceScore = lead.contactConfidence?.overallScore || 92;
+  // Determine if any contact info was discovered
+  const hasContactInfo = !!(isPhoneValid || email || (instagram_url && isInstagramUrlValid) || facebook_url || linkedin_url);
+  
+  // Calculate confidence dynamically from available contact data
+  const getDynamicConfidence = () => {
+    if (lead.contactConfidence?.overallScore) {
+      return lead.contactConfidence.overallScore;
+    }
+    let score = 0;
+    if (email) score += 35;
+    if (isPhoneValid) score += 35;
+    if (instagram_url && isInstagramUrlValid) score += 15;
+    if (facebook_url) score += 10;
+    if (linkedin_url) score += 10;
+    return Math.min(score, 100);
+  };
+  const confidenceScore = getDynamicConfidence();
 
   // Render actions when clicked
   const handleOpenWhatsApp = () => {
-    if (!cleanPhone) return;
+    if (!isPhoneValid) return;
     window.open(`https://wa.me/${cleanPhone}`, "_blank", "noopener,noreferrer");
   };
 
   const handleOpenInstagram = () => {
-    if (!instagram_url) return;
+    if (!isInstagramUrlValid) return;
     window.open(instagram_url, "_blank", "noopener,noreferrer");
   };
 
@@ -58,6 +74,9 @@ export default function CommunicationCenterTab({ lead }: CommunicationCenterTabP
     if (!email) return;
     window.location.href = `mailto:${email}`;
   };
+
+  // Condition to check if there is any phone, instagram, or email to show Contact Actions
+  const showContactActions = !!(isPhoneValid || (instagram_url && isInstagramUrlValid) || email);
 
   return (
     <div className="space-y-6">
@@ -87,23 +106,18 @@ export default function CommunicationCenterTab({ lead }: CommunicationCenterTabP
       )}
 
       {/* Contact Actions Console */}
-      <div className="bg-slate-950 border border-slate-900 rounded-2xl p-6 space-y-5 shadow-xl">
-        <div>
-          <h3 className="text-xs font-mono uppercase tracking-wider text-slate-300 font-bold mb-1">Contact Actions</h3>
-          <p className="text-[11px] text-slate-500 font-sans">
-            Directly connect with the business owner using verified outreach redirects.
-          </p>
-        </div>
-
-        {!hasContactInfo ? (
-          <div className="p-8 bg-slate-900/50 rounded-xl border border-slate-900/80 text-center space-y-2">
-            <p className="text-xs text-slate-400 font-sans font-medium">No contact options discovered for this lead yet.</p>
-            <p className="text-[10px] text-slate-500 font-sans">Run a lead research pass to automatically locate email, social profiles, and phone numbers.</p>
+      {showContactActions && (
+        <div className="bg-slate-950 border border-slate-900 rounded-2xl p-6 space-y-5 shadow-xl">
+          <div>
+            <h3 className="text-xs font-mono uppercase tracking-wider text-slate-300 font-bold mb-1">Contact Actions</h3>
+            <p className="text-[11px] text-slate-500 font-sans">
+              Directly connect with the business owner using verified outreach redirects.
+            </p>
           </div>
-        ) : (
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
             {/* WhatsApp Direct */}
-            {phone && (
+            {isPhoneValid && (
               <motion.button
                 whileHover={{ scale: 1.01 }}
                 whileTap={{ scale: 0.99 }}
@@ -124,7 +138,7 @@ export default function CommunicationCenterTab({ lead }: CommunicationCenterTabP
             )}
 
             {/* Instagram Profile */}
-            {instagram_url && (
+            {instagram_url && isInstagramUrlValid && (
               <motion.button
                 whileHover={{ scale: 1.01 }}
                 whileTap={{ scale: 0.99 }}
@@ -213,8 +227,8 @@ export default function CommunicationCenterTab({ lead }: CommunicationCenterTabP
               </motion.button>
             )}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

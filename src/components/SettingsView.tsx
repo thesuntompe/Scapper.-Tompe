@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { 
   Settings, Check, Info, Mail, Database, FileSpreadsheet, HardDrive, RefreshCw,
   LogOut, ShieldAlert, Sparkles, AlertCircle, ShieldCheck, Play, ArrowRight, CheckCircle2,
-  Lock, ArrowUpRight, HelpCircle, Laptop, Download, Globe
+  Lock, ArrowUpRight, HelpCircle, Laptop, Download, Globe, Cpu, Layers
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import Logo from "./Logo";
@@ -19,26 +19,50 @@ export default function SettingsView() {
   // Account state
   const [googleLinked, setGoogleLinked] = useState(() => {
     const saved = localStorage.getItem("singularity_google_linked");
-    return saved !== null ? saved === "true" : true; // Default linked for a smooth user experience
+    return saved !== null ? saved === "true" : false; // Default disconnected by default
   });
 
   const [currentMode, setCurrentMode] = useState<"Cloud Mode Active" | "Manual Mode Active">(() => {
     const saved = localStorage.getItem("singularity_current_mode");
-    return (saved as "Cloud Mode Active" | "Manual Mode Active") || "Cloud Mode Active";
+    return (saved as "Cloud Mode Active" | "Manual Mode Active") || "Manual Mode Active";
   });
+
+  // AI Engine State
+  const [aiStatus, setAiStatus] = useState<any>({
+    status: "Inactive",
+    provider: "Gemini",
+    gemini: "Inactive",
+    openai: "Inactive"
+  });
+
+  useEffect(() => {
+    const loadAiSettings = async () => {
+      try {
+        const res = await fetch("/api/ai/status");
+        if (res.ok) {
+          const statusData = await res.json();
+          setAiStatus(statusData);
+        }
+      } catch (e) {
+        console.error("Failed to load AI settings:", e);
+      }
+    };
+    loadAiSettings();
+  }, []);
+
 
   // Services State
   const [firebaseStatus, setFirebaseStatus] = useState<"Connected" | "Local Mode">(() => {
-    return (localStorage.getItem("singularity_firebase_status") as "Connected" | "Local Mode") || "Connected";
+    return (localStorage.getItem("singularity_firebase_status") as "Connected" | "Local Mode") || "Local Mode";
   });
   const [sheetsStatus, setSheetsStatus] = useState<"Connected" | "Disabled">(() => {
-    return (localStorage.getItem("singularity_sheets_status") as "Connected" | "Disabled") || "Connected";
+    return (localStorage.getItem("singularity_sheets_status") as "Connected" | "Disabled") || "Disabled";
   });
   const [gmailStatus, setGmailStatus] = useState<"Connected" | "Manual Email Mode">(() => {
-    return (localStorage.getItem("singularity_gmail_status") as "Connected" | "Manual Email Mode") || "Connected";
+    return (localStorage.getItem("singularity_gmail_status") as "Connected" | "Manual Email Mode") || "Manual Email Mode";
   });
   const [mapsStatus, setMapsStatus] = useState<"Enabled" | "Fallback Search Engine">(() => {
-    return (localStorage.getItem("singularity_maps_status") as "Enabled" | "Fallback Search Engine") || "Enabled";
+    return (localStorage.getItem("singularity_maps_status") as "Enabled" | "Fallback Search Engine") || "Fallback Search Engine";
   });
 
   // Simulator / UI State
@@ -361,6 +385,7 @@ export default function SettingsView() {
                   {mapsStatus === "Enabled" ? "Enabled" : "Fallback Search Engine"}
                 </span>
               </div>
+
             </div>
           </div>
 

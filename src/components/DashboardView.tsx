@@ -153,7 +153,7 @@ export default function DashboardView({ leads, onFocusLead, onNavigateSection }:
       </div>
 
       {/* Compact Grid Layout for Metric Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {/* ROW 1: New Leads & Active Clients */}
         <div className="bg-[#111827]/60 backdrop-blur-md border border-[#1F2937] hover:border-[#7C3AED]/40 transition-all rounded-xl p-3 shadow-md flex flex-col justify-between h-[85px]">
           <div className="flex items-center justify-between text-slate-400">

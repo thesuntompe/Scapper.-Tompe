@@ -503,6 +503,69 @@ This Agreement is entered into by Singularity AI and ${lead.businessName} (repre
             </div>
           </div>
 
+          {/* Lead CRM Metadata History Panel */}
+          <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-sm space-y-4 animate-fade-in">
+            <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+              <Clock size={16} className="text-slate-700" />
+              <div>
+                <h4 className="text-sm font-bold text-slate-800">Lead CRM Tracking History</h4>
+                <p className="text-[10px] text-slate-400 font-mono mt-0.5">DYNAMIC REAL-TIME METADATA RECORD</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+              <div className="space-y-1">
+                <span className="text-[9px] font-mono uppercase text-slate-400 block">Lead Source</span>
+                <p className="text-xs font-bold text-slate-800 truncate">
+                  {lead.category ? `${lead.category} Scan` : "Google Maps Search"}
+                </p>
+              </div>
+              <div className="space-y-1">
+                <span className="text-[9px] font-mono uppercase text-slate-400 block">Discovery Date</span>
+                <p className="text-xs font-bold text-slate-800 font-mono">
+                  {lead.createdAt ? new Date(lead.createdAt).toLocaleDateString(undefined, { dateStyle: 'medium' }) : "Recently Scanned"}
+                </p>
+              </div>
+              <div className="space-y-1">
+                <span className="text-[9px] font-mono uppercase text-slate-400 block">Website Status</span>
+                <div>
+                  <span className={`inline-flex items-center gap-1 text-[10px] font-bold font-mono px-2 py-0.5 rounded ${
+                    lead.onlinePresence?.hasWebsite
+                      ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
+                      : "bg-amber-50 text-amber-700 border border-amber-100"
+                  }`}>
+                    {lead.onlinePresence?.hasWebsite ? "Has Website" : "Needs Redesign"}
+                  </span>
+                </div>
+              </div>
+              <div className="space-y-1">
+                <span className="text-[9px] font-mono uppercase text-slate-400 block">Contact Status</span>
+                <div>
+                  <span className={`inline-flex items-center gap-1 text-[10px] font-bold font-mono px-2 py-0.5 rounded uppercase ${
+                    lead.status === "paid_and_deployed"
+                      ? "bg-emerald-100 text-emerald-800"
+                      : lead.status === "emailed"
+                      ? "bg-indigo-100 text-indigo-800"
+                      : "bg-slate-100 text-slate-800"
+                  }`}>
+                    {lead.status?.replace(/_/g, " ")}
+                  </span>
+                </div>
+              </div>
+              <div className="space-y-1">
+                <span className="text-[9px] font-mono uppercase text-slate-400 block">Last Outreach</span>
+                <p className="text-xs font-bold text-slate-800">
+                  {lead.lastContacted 
+                    ? new Date(lead.lastContacted).toLocaleDateString(undefined, { dateStyle: 'medium' })
+                    : lead.contactAttempts && lead.contactAttempts > 0
+                    ? `Attempts: ${lead.contactAttempts}`
+                    : "Never Contacted"
+                  }
+                </p>
+              </div>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             
             {/* Left Panel: Proposal and Contract Generation Panel */}

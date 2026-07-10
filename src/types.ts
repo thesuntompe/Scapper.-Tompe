@@ -173,6 +173,10 @@ export interface Lead {
   contract?: Contract;
   followupAutomation?: FollowupAutomation;
   contactInfo?: BusinessContactInfo;
+  createdAt?: string;
+  updatedAt?: string;
+  lastContacted?: string | null;
+  contactAttempts?: number;
 }
 
 export interface CampaignStats {

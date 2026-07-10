@@ -188,6 +188,18 @@ export async function dbGetLeads(): Promise<any[]> {
 
 // CRUD: SAVE SINGLE LEAD
 export async function dbSaveLead(lead: any): Promise<void> {
+  // Populate CRM history fields if missing
+  if (!lead.createdAt) {
+    lead.createdAt = new Date().toISOString();
+  }
+  lead.updatedAt = new Date().toISOString();
+  if (lead.lastContacted === undefined) {
+    lead.lastContacted = null;
+  }
+  if (lead.contactAttempts === undefined) {
+    lead.contactAttempts = 0;
+  }
+
   const sanitized = sanitizeData(lead);
   const { useFirestore: active } = await initFirestore();
   if (!active || !db) {
@@ -214,7 +226,20 @@ export async function dbSaveLead(lead: any): Promise<void> {
 
 // CRUD: SAVE MULTIPLE LEADS
 export async function dbSaveLeads(newLeads: any[]): Promise<void> {
-  const sanitizedLeads = newLeads.map(l => sanitizeData(l));
+  const updatedLeads = newLeads.map(lead => {
+    if (!lead.createdAt) {
+      lead.createdAt = new Date().toISOString();
+    }
+    lead.updatedAt = new Date().toISOString();
+    if (lead.lastContacted === undefined) {
+      lead.lastContacted = null;
+    }
+    if (lead.contactAttempts === undefined) {
+      lead.contactAttempts = 0;
+    }
+    return lead;
+  });
+  const sanitizedLeads = updatedLeads.map(l => sanitizeData(l));
   const { useFirestore: active } = await initFirestore();
   if (!active || !db) {
     console.log("Firestore not active. Saving batch leads to local file database.");
@@ -234,7 +259,20 @@ export async function dbSaveLeads(newLeads: any[]): Promise<void> {
 
 // CRUD: RESET DATABASE
 export async function dbResetLeads(defaultLeads: any[]): Promise<any[]> {
-  const sanitizedDefaults = defaultLeads.map(l => sanitizeData(l));
+  const updatedDefaults = defaultLeads.map(lead => {
+    if (!lead.createdAt) {
+      lead.createdAt = new Date().toISOString();
+    }
+    lead.updatedAt = new Date().toISOString();
+    if (lead.lastContacted === undefined) {
+      lead.lastContacted = null;
+    }
+    if (lead.contactAttempts === undefined) {
+      lead.contactAttempts = 0;
+    }
+    return lead;
+  });
+  const sanitizedDefaults = updatedDefaults.map(l => sanitizeData(l));
   const { useFirestore: active } = await initFirestore();
   if (!active || !db) {
     console.log("Firestore not active. Resetting local file database.");

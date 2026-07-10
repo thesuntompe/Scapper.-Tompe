@@ -13,10 +13,16 @@ interface AIWebsiteWorkspaceTabProps {
 
 export default function AIWebsiteWorkspaceTab({ lead, onUpdateLead }: AIWebsiteWorkspaceTabProps) {
   const [copied, setCopied] = useState(false);
+  const [copiedRedirect, setCopiedRedirect] = useState(false);
+
+  const liveUrl = `${window.location.origin}/live/${lead.id}`;
+
+  const websiteUrl = lead.customDomain?.verified && lead.customDomain?.domainName
+    ? `https://${lead.customDomain.domainName}`
+    : liveUrl;
 
   const handleCopyUrl = () => {
-    const realUrl = `${window.location.origin}/live/${lead.id}`;
-    navigator.clipboard.writeText(realUrl);
+    navigator.clipboard.writeText(websiteUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -149,7 +155,8 @@ export default function AIWebsiteWorkspaceTab({ lead, onUpdateLead }: AIWebsiteW
   const handleConfigureDomain = async (dnsStatus: "pending" | "configured") => {
     if (dnsStatus === "configured") {
       setVerifyingDns(true);
-      setVerifyingDns(false);
+      // Wait 1.5 seconds to simulate a real check
+      await new Promise(resolve => setTimeout(resolve, 1500));
     }
 
     try {
@@ -169,6 +176,8 @@ export default function AIWebsiteWorkspaceTab({ lead, onUpdateLead }: AIWebsiteW
       }
     } catch (e) {
       console.error(e);
+    } finally {
+      setVerifyingDns(false);
     }
   };
 
@@ -626,7 +635,7 @@ export default function AIWebsiteWorkspaceTab({ lead, onUpdateLead }: AIWebsiteW
                       <div>
                         <span className="text-[9px] font-mono text-slate-500 block">Production Link</span>
                         <a
-                          href={`${window.location.origin}/live/${lead.id}`}
+                          href={websiteUrl}
                           target="_blank"
                           rel="noreferrer"
                           className="text-xs text-indigo-400 font-bold hover:underline inline-flex items-center gap-1 mt-0.5"
@@ -657,21 +666,20 @@ export default function AIWebsiteWorkspaceTab({ lead, onUpdateLead }: AIWebsiteW
                   <div className="p-3.5 bg-emerald-500/5 border border-emerald-500/10 rounded-xl space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] font-mono text-emerald-400 uppercase font-bold flex items-center gap-1">
-                        <Shield size={12} />
-                        Domain Securely Connected
+                        <CheckCircle2 size={12} />
+                        Connected
                       </span>
-                      <span className="text-[9px] font-mono bg-emerald-500/15 text-emerald-400 px-1.5 py-0.5 rounded border border-emerald-500/20">SSL ACTIVE</span>
                     </div>
                     
                     <div>
                       <span className="text-[9px] font-mono text-slate-500 block uppercase">Mapped Domain</span>
                       <a 
-                        href={`${window.location.origin}/live/${lead.id}`} 
+                        href={websiteUrl} 
                         target="_blank" 
                         rel="noreferrer" 
                         className="text-xs font-mono font-bold text-white hover:text-indigo-400 hover:underline block mt-0.5"
                       >
-                        https://{lead.customDomain.domainName}
+                        {websiteUrl}
                       </a>
                     </div>
 
@@ -681,10 +689,61 @@ export default function AIWebsiteWorkspaceTab({ lead, onUpdateLead }: AIWebsiteW
                         singularity-pages.net
                       </div>
                       <div>
-                        <span className="text-[8px] text-slate-500 block">Propagation:</span>
-                        100% Verified
+                        <span className="text-[8px] text-slate-500 block">Verification Status:</span>
+                        Connected
                       </div>
                     </div>
+                  </div>
+
+                  {/* HIGHLY INTERACTIVE AND ELEGANT REDIRECTION GUIDE TO FIX DNS NXDOMAIN */}
+                  <div className="p-3 bg-amber-500/5 border border-amber-500/10 rounded-xl space-y-2.5">
+                    <div className="flex items-center gap-1.5 text-amber-400">
+                      <AlertTriangle size={13} className="shrink-0" />
+                      <span className="text-[10px] font-mono uppercase font-bold tracking-wider">
+                        Fixing "Site can't be reached" error
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-slate-300 font-sans leading-relaxed">
+                      Because this is a sandboxed developer workspace, pointing CNAME records directly is simulated and will result in a <strong>DNS NXDOMAIN</strong> error on your real device.
+                    </p>
+                    <p className="text-[10px] text-slate-300 font-sans leading-relaxed">
+                      To make your domain <strong className="text-white font-mono">{lead.customDomain.domainName}</strong> load this website instantly on your phone or PC, set up <strong>URL Forwarding / Domain Redirection</strong> inside your domain registrar panel (GoDaddy, Hostinger, Namecheap, etc.):
+                    </p>
+
+                    <div className="bg-slate-950 p-2 rounded border border-slate-900 text-[10px] font-mono space-y-1.5 text-slate-400">
+                      <div>
+                        <span className="text-[8px] text-slate-500 uppercase block font-bold">1. Registrar Action</span>
+                        Choose <span className="text-white">Domain Forwarding / Redirection</span>
+                      </div>
+                      <div>
+                        <span className="text-[8px] text-slate-500 uppercase block font-bold">2. Redirection Type</span>
+                        Permanent Redirect <span className="text-amber-400">(301)</span>
+                      </div>
+                      <div>
+                        <span className="text-[8px] text-slate-500 uppercase block font-bold">3. Destination URL (Copy this exact link)</span>
+                        <div className="flex items-center gap-1.5 mt-1">
+                          <input 
+                            type="text" 
+                            readOnly 
+                            value={liveUrl} 
+                            className="bg-slate-900 border border-slate-800 text-slate-300 px-1.5 py-1 text-[9px] rounded flex-1 focus:outline-none"
+                          />
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(liveUrl);
+                              setCopiedRedirect(true);
+                              setTimeout(() => setCopiedRedirect(false), 2000);
+                            }}
+                            className="px-2 py-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[8px] uppercase rounded cursor-pointer transition-colors"
+                          >
+                            {copiedRedirect ? "Copied!" : "Copy"}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-[9px] text-slate-400 font-sans italic">
+                      After setting up forwarding in GoDaddy or Hostinger, opening "{lead.customDomain.domainName}" will instantly show this AI-generated website!
+                    </p>
                   </div>
 
                   <button
@@ -725,8 +784,17 @@ export default function AIWebsiteWorkspaceTab({ lead, onUpdateLead }: AIWebsiteW
                     <div className="p-3 bg-slate-900 border border-slate-850 rounded-lg space-y-3.5">
                       <div className="space-y-1">
                         <p className="text-[10px] font-mono font-bold text-white uppercase flex items-center gap-1">
-                          <AlertTriangle size={12} className="text-amber-500" />
-                          Domain Registrar Instructions
+                          {verifyingDns ? (
+                            <>
+                              <Loader2 size={12} className="text-indigo-400 animate-spin" />
+                              Checking DNS...
+                            </>
+                          ) : (
+                            <>
+                              <AlertTriangle size={12} className="text-amber-500" />
+                              Pending Verification
+                            </>
+                          )}
                         </p>
                         <p className="text-[9px] text-slate-400 font-sans">
                           Sign into your domain provider (e.g. GoDaddy, Namecheap) and create these two DNS records:
@@ -761,7 +829,7 @@ export default function AIWebsiteWorkspaceTab({ lead, onUpdateLead }: AIWebsiteW
                           {verifyingDns ? (
                             <>
                               <Loader2 size={12} className="animate-spin" />
-                              Testing Propagation...
+                              Checking DNS...
                             </>
                           ) : (
                             <>
@@ -807,7 +875,7 @@ export default function AIWebsiteWorkspaceTab({ lead, onUpdateLead }: AIWebsiteW
                   {/* QR Code generator using qrserver */}
                   <div className="bg-white p-1 rounded-lg shrink-0 border border-slate-800 self-center">
                     <img 
-                      src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(window.location.origin + "/live/" + lead.id)}`}
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(websiteUrl)}`}
                       alt="Scan QR to open site on mobile"
                       className="w-20 h-20 block"
                       referrerPolicy="no-referrer"
@@ -821,7 +889,7 @@ export default function AIWebsiteWorkspaceTab({ lead, onUpdateLead }: AIWebsiteW
                     <input
                       type="text"
                       readOnly
-                      value={`${window.location.origin}/live/${lead.id}`}
+                      value={websiteUrl}
                       className="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-[10px] text-slate-300 font-mono focus:outline-none"
                     />
                     <button
@@ -945,7 +1013,7 @@ export default function AIWebsiteWorkspaceTab({ lead, onUpdateLead }: AIWebsiteW
                     
                     {/* Real Clickable Interactive URL Bar */}
                     <a
-                      href={`${window.location.origin}/live/${lead.id}`}
+                      href={websiteUrl}
                       target="_blank"
                       rel="noreferrer"
                       className="bg-slate-900 border border-slate-800 hover:border-slate-700 hover:bg-slate-850 rounded px-3 py-1 font-mono text-[10px] text-slate-500 flex items-center justify-between gap-1.5 flex-1 cursor-pointer transition-all group select-none"

@@ -7,7 +7,7 @@ interface LogoProps {
 }
 
 export default function Logo({ size = "md", showText = true }: LogoProps) {
-  // Size map scaled down by 15% further for premium density
+  // Size map scaled down for ultra-precise UI density
   const sizeMap = {
     sm: { box: "w-5 h-5", svg: 20, font: "text-xs" },
     md: { box: "w-7 h-7", svg: 28, font: "text-sm" },
@@ -18,8 +18,8 @@ export default function Logo({ size = "md", showText = true }: LogoProps) {
   const current = sizeMap[size];
 
   return (
-    <div className="flex items-center gap-2 select-none">
-      {/* Premium Minimal Vector Logo */}
+    <div className="flex items-center gap-2.5 select-none">
+      {/* High-End Rings & Orbit Core Vector Logo */}
       <div className={`relative ${current.box} flex items-center justify-center shrink-0`}>
         <svg
           width={current.svg}
@@ -28,33 +28,106 @@ export default function Logo({ size = "md", showText = true }: LogoProps) {
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
         >
-          {/* Thin Purple Orbit Ring */}
+          {/* Subtle Outer Shimmer Halo */}
           <circle
             cx="50"
             cy="50"
-            r="38"
-            stroke="#A855F7"
-            strokeWidth="1.5"
-            className="opacity-90"
+            r="44"
+            stroke="url(#purpleHalo)"
+            strokeWidth="0.75"
+            strokeDasharray="4 4"
+            className="opacity-50 animate-[spin_40s_linear_infinite]"
           />
 
-          {/* Sharp Black Singularity Core */}
-          <circle cx="50" cy="50" r="15" fill="#000000" stroke="#374151" strokeWidth="1.5" />
+          {/* Primary Gravitational Orbit Ring (Perfect Circle) */}
+          <circle
+            cx="50"
+            cy="50"
+            r="36"
+            stroke="url(#ringGradient1)"
+            strokeWidth="1.5"
+            className="opacity-80"
+          />
 
-          {/* Tiny Stars */}
-          <circle cx="25" cy="30" r="1.5" fill="#FFFFFF" className="opacity-70" />
-          <circle cx="75" cy="35" r="1.2" fill="#FFFFFF" className="opacity-80" />
-          <circle cx="35" cy="72" r="1" fill="#FFFFFF" className="opacity-60" />
-          <circle cx="70" cy="70" r="1.5" fill="#A855F7" className="opacity-90" />
+          {/* Secondary Intersecting Slanted Orbit Ring (Ellipse) */}
+          <ellipse
+            cx="50"
+            cy="50"
+            rx="36"
+            ry="14"
+            stroke="url(#ringGradient2)"
+            strokeWidth="1"
+            transform="rotate(-30 50 50)"
+            className="opacity-65"
+          />
 
-          {/* Orbit Star/Dot */}
+          {/* Tertiary Intersecting Slanted Orbit Ring (Opposite Ellipse) */}
+          <ellipse
+            cx="50"
+            cy="50"
+            rx="36"
+            ry="14"
+            stroke="url(#ringGradient2)"
+            strokeWidth="1"
+            transform="rotate(30 50 50)"
+            className="opacity-65 animate-pulse"
+          />
+
+          {/* High-Contrast Luminous Central Singularity Core */}
+          <circle
+            cx="50"
+            cy="50"
+            r="12"
+            fill="#090d16"
+            stroke="#a855f7"
+            strokeWidth="2"
+          />
+          <circle
+            cx="50"
+            cy="50"
+            r="5"
+            fill="url(#coreGlow)"
+            className="animate-pulse"
+          />
+
+          {/* Orbiting Quantum Particles (Smoothly Rotated via CSS) */}
           <motion.g
             animate={{ rotate: 360 }}
-            transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+            transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
             style={{ transformOrigin: "50px 50px" }}
           >
-            <circle cx="50" cy="12" r="2.5" fill="#FFFFFF" />
+            <circle cx="50" cy="14" r="3" fill="#ffffff" className="shadow-lg" />
+            <circle cx="50" cy="14" r="1.5" fill="#a855f7" />
           </motion.g>
+
+          <motion.g
+            animate={{ rotate: -360 }}
+            transition={{ duration: 9, repeat: Infinity, ease: "linear" }}
+            style={{ transformOrigin: "50px 50px" }}
+          >
+            <circle cx="14" cy="50" r="2" fill="#d8b4fe" />
+          </motion.g>
+
+          {/* Gradients Definitions */}
+          <defs>
+            <radialGradient id="coreGlow" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="#d8b4fe" />
+              <stop offset="100%" stopColor="#a855f7" />
+            </radialGradient>
+            <linearGradient id="ringGradient1" x1="0" y1="50" x2="100" y2="50" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stopColor="#a855f7" />
+              <stop offset="50%" stopColor="#6366f1" stopOpacity="0.3" />
+              <stop offset="100%" stopColor="#d8b4fe" />
+            </linearGradient>
+            <linearGradient id="ringGradient2" x1="0" y1="50" x2="100" y2="50" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stopColor="#6366f1" stopOpacity="0.8" />
+              <stop offset="100%" stopColor="#a855f7" stopOpacity="0.2" />
+            </linearGradient>
+            <linearGradient id="purpleHalo" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stopColor="#a855f7" />
+              <stop offset="100%" stopColor="#6366f1" />
+            </linearGradient>
+          </defs>
         </svg>
       </div>
 
@@ -69,7 +142,7 @@ export default function Logo({ size = "md", showText = true }: LogoProps) {
               AI
             </span>
           </div>
-          <span className="text-[8px] font-mono tracking-widest text-slate-500 font-bold uppercase mt-0.5 leading-none">
+          <span className="text-[8px] font-mono tracking-widest text-slate-500 font-bold uppercase mt-1 leading-none">
             FIND. BUILD. SCALE.
           </span>
         </div>
