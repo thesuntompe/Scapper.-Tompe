@@ -27,13 +27,13 @@ service cloud.firestore {
     // Check if the incoming lead complies with type and size limits
     function isValidLead(data) {
       return data.id is string
-        && data.businessName is string && data.businessName.size() <= 256
-        && data.ownerName is string && data.ownerName.size() <= 128
-        && data.email is string && data.email.size() <= 150
-        && data.phone is string && data.phone.size() <= 40
-        && data.category is string && data.category.size() <= 100
-        && data.location is string && data.location.size() <= 100
-        && data.status is string && data.status.size() <= 50;
+        && data.businessName is string && data.businessName.size() <= 512
+        && data.ownerName is string && data.ownerName.size() <= 256
+        && data.email is string && data.email.size() <= 256
+        && data.phone is string && data.phone.size() <= 100
+        && data.category is string && data.category.size() <= 200
+        && data.location is string && data.location.size() <= 512
+        && data.status is string && data.status.size() <= 100;
     }
 
     match /leads/{leadId} {

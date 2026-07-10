@@ -47,12 +47,11 @@ export default function CampaignSettings({ onCampaignComplete }: CampaignSetting
   const fullLocation = [activeCity, activeCountry].filter(Boolean).join(", ");
 
   const progressSteps = [
-    "Establishing secure live session connection with Singularity Grounding Core...",
-    `Scanning Google Maps index for real-time local business rating, location and contact intelligence...`,
-    `Scraping web directories and auditing SEO layout metadata for '${category}' in '${fullLocation}'...`,
-    "Validating mobile responsiveness deficits, core SSL layers, and booking engines...",
-    "Computing business opportunity priority index and building prospect dossiers...",
-    "Injecting verified lead profiles and custom email campaigns to local operating CRM..."
+    "Connecting to Google Search and Maps index...",
+    `Searching for active businesses in '${category}' within '${fullLocation}'...`,
+    "Extracting real-time business contact numbers and physical addresses...",
+    "Verifying public business emails and social profiles...",
+    "Finalizing verified local business contact profiles..."
   ];
 
   const toggleFilter = (key: keyof typeof filters) => {
@@ -113,13 +112,11 @@ export default function CampaignSettings({ onCampaignComplete }: CampaignSetting
     } catch (error: any) {
       console.error(error);
       clearInterval(interval);
-      setLogs((l) => [...l, `Execution failed: ${error.message}. Please verify the local backup dataset.`]);
+      setLogs((l) => [...l, `Execution failed: ${error.message}.`]);
       setLoading(false);
     }
   };
 
-  const GOOGLE_MAPS_KEY = process.env.GOOGLE_MAPS_PLATFORM_KEY || "";
-  const hasValidKey = Boolean(GOOGLE_MAPS_KEY) && GOOGLE_MAPS_KEY !== "YOUR_API_KEY";
 
   return (
     <div className="bg-[#111827] border border-[#1F2937] rounded-xl p-6 shadow-xl animate-fadeIn text-[#F8FAFC]">
@@ -129,31 +126,10 @@ export default function CampaignSettings({ onCampaignComplete }: CampaignSetting
           <Compass size={16} />
         </div>
         <div>
-          <h2 className="text-sm font-bold text-white font-sans tracking-tight">Lead Intelligence & Discovery</h2>
-          <p className="text-[9px] text-slate-400 font-mono mt-0.5">TARGET LOCAL DEFICITS GLOBALLY</p>
+          <h2 className="text-sm font-bold text-white font-sans tracking-tight">Local Business Intelligence Discovery</h2>
+          <p className="text-[9px] text-slate-400 font-mono mt-0.5">FIND REAL-WORLD CONTACT DETAILS</p>
         </div>
       </div>
-
-      {/* API Key Status / Reference Banner to trigger the popup */}
-      {!hasValidKey && (
-        <div className="mb-6 p-4 bg-amber-950/40 border border-amber-800/60 rounded-xl text-xs space-y-2 text-amber-200">
-          <div className="flex items-center gap-2 text-amber-400 font-bold">
-            <AlertTriangle size={14} className="text-amber-400 shrink-0" />
-            <span>Google Maps API Key Not Connected</span>
-          </div>
-          <p className="text-slate-300 leading-relaxed text-[11px]">
-            To search Google Maps for real Hyderabad cafes and local businesses, you must add your Google Maps API key. Without a key, the system will fall back to Gemini-powered web search grounding.
-          </p>
-          <div className="p-3 bg-[#0B1020]/60 border border-amber-900/30 rounded-lg space-y-1.5 font-sans text-slate-400 text-[10px]">
-            <p className="font-semibold text-slate-300">How to integrate your Google account key:</p>
-            <ol className="list-decimal list-inside space-y-1">
-              <li>Get an API key from the <a href="https://console.cloud.google.com/google/maps-apis/start?utm_campaign=gmp-code-assist-ais" target="_blank" rel="noopener noreferrer" className="text-[#A855F7] hover:underline font-bold">Google Cloud Console</a>.</li>
-              <li>When the <strong className="text-[#A855F7]">"Enter your environment variable to continue"</strong> popup appears, paste your key.</li>
-              <li>Or configure it manually: Open <strong className="text-slate-300">Settings</strong> (⚙️ gear icon, top-right) → <strong className="text-slate-300">Secrets</strong> → Add <code className="bg-slate-900 px-1 py-0.5 rounded text-[#A855F7]">GOOGLE_MAPS_PLATFORM_KEY</code> as the name and paste your API key as the value.</li>
-            </ol>
-          </div>
-        </div>
-      )}
 
       {!loading ? (
         <form onSubmit={handleSubmit} className="space-y-6">

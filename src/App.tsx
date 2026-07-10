@@ -51,11 +51,7 @@ export default function App() {
   };
 
   const handleCampaignComplete = (newLeads: Lead[]) => {
-    setLeads((prevLeads) => {
-      const existingIds = new Set(prevLeads.map((l) => l.id));
-      const filteredNew = newLeads.filter((nl) => !existingIds.has(nl.id));
-      return [...filteredNew, ...prevLeads];
-    });
+    setLeads(newLeads);
     if (newLeads.length > 0) {
       setSelectedLeadId(newLeads[0].id);
       setActiveSection("outreach"); // Auto-focus on Outreach or Dashboard for the new lead
